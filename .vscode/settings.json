@@ -13,5 +13,8 @@
   },
   "[typescript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
   "[vue]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
-  "eslint.useFlatConfig": true
+  "eslint.useFlatConfig": true,
+
+  // Tailwind v4 at-rules (@theme, @apply) in CSS files.
+  "files.associations": { "*.css": "tailwindcss" }
 }

@@ -7,10 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an offline-capable, multi-tenant inventory system for auto shops: one-time license, Ukrainian only, UAH only. `SPEC.md` is the source of truth for requirements, architecture and the roadmap. Read the relevant section before designing anything non-trivial.
 
 The repo is a pnpm workspace:
-- `apps/crm`: the Vue app, with Pinia, Vue Router and the `@` → `apps/crm/src` alias. It is an empty shell so far.
+- `apps/crm`: the Vue app, with Pinia, Vue Router, Tailwind v4 and the `@` → `apps/crm/src` alias. It is an empty shell so far.
 - `packages/core`: a source-only package (`exports` points at `src/index.ts`, no build step). It is empty so far.
 
-`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Tailwind, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
+`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
 
 ## Commands
 
@@ -43,6 +43,10 @@ Import boundaries are enforced with `no-restricted-imports`:
 - `@supabase/*` is allowed only in `packages/adapter-*`.
 - Deep imports into workspace packages (`@auto-crm/core/src/...`) are banned.
 - `packages/core` may not import Vue, Pinia, Dexie, `node:*`, apps or adapters.
+
+Tailwind classes are linted by `eslint-plugin-better-tailwindcss`, which reads the theme from `apps/crm/src/styles/main.css`. Autofix sorts classes and removes duplicates. Unknown and conflicting classes are errors with no autofix.
+
+Tailwind v4 has no `tailwind.config.js`. Put theme tokens in `@theme` in `apps/crm/src/styles/main.css`, and load Tailwind through the `@tailwindcss/vite` plugin.
 
 `vue/no-bare-strings-in-template` is on, so template text must come from vue-i18n.
 

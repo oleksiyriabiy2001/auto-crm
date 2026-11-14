@@ -1,5 +1,6 @@
 import stylistic from '@stylistic/eslint-plugin'
 import vitest from '@vitest/eslint-plugin'
+import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { vueTsConfigs, withVueTs } from '@vue/eslint-config-typescript'
 import type { Linter } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
@@ -89,6 +90,21 @@ export default withVueTs(
       'vue/space-infix-ops': 'error',
       'vue/space-unary-ops': 'error',
       'vue/template-curly-spacing': 'error',
+    },
+  },
+
+  {
+    name: 'auto-crm/tailwind',
+    files: ['apps/crm/**/*.{vue,ts}'],
+    plugins: { 'better-tailwindcss': betterTailwindcss },
+    rules: {
+      // Class order, duplicates and wrapping are formatting: ESLint fixes them.
+      // Unknown and conflicting classes are real errors.
+      ...betterTailwindcss.configs['recommended-error'].rules,
+      'better-tailwindcss/enforce-consistent-line-wrapping': ['error', { printWidth: 100 }],
+    },
+    settings: {
+      'better-tailwindcss': { entryPoint: 'apps/crm/src/styles/main.css' },
     },
   },
 
