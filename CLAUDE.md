@@ -7,14 +7,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an offline-capable, multi-tenant inventory system for auto shops: one-time license, Ukrainian only, UAH only. `SPEC.md` is the source of truth for requirements, architecture and the roadmap. Read the relevant section before designing anything non-trivial.
 
 The repo is a pnpm workspace:
-- `apps/crm`: the Vue app, with Pinia, Vue Router, Tailwind v4 and the `@` → `apps/crm/src` alias. It is an empty shell so far.
+- `apps/crm`: the Vue app, with Pinia, Vue Router, Tailwind v4, vue-i18n and the `@` → `apps/crm/src` alias. It is an empty shell so far.
 - `packages/core`: a source-only package (`exports` points at `src/index.ts`, no build step). It is empty so far.
 
-`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
+`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Dexie, zod and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
 
 ## Commands
 
-Use pnpm. Node must be `^22.18.0 || >=24.12.0`. Run these from the repo root:
+Use pnpm. Node must be `^22.18.0 || >=24.12.0`.
+
+pnpm enforces a minimum release age of one day, a supply-chain guard. If a fresh version is rejected, pin the newest version older than a day. Don't add `minimumReleaseAgeExclude` entries. Install scripts are opt-in through `allowBuilds` in `pnpm-workspace.yaml`. `esbuild` is denied there because its prebuilt binary arrives as an optional dependency.
+
+Run these from the repo root:
 
 - `pnpm dev`: Vite dev server for `apps/crm`
 - `pnpm build`: type-check and build `apps/crm`
@@ -48,7 +52,13 @@ Tailwind classes are linted by `eslint-plugin-better-tailwindcss`, which reads t
 
 Tailwind v4 has no `tailwind.config.js`. Put theme tokens in `@theme` in `apps/crm/src/styles/main.css`, and load Tailwind through the `@tailwindcss/vite` plugin.
 
-`vue/no-bare-strings-in-template` is on, so template text must come from vue-i18n.
+## i18n
+
+- **Setup:** vue-i18n runs in Composition API mode (`useI18n()`, `t()`). It's configured in `apps/crm/src/i18n/index.ts`, and the messages live in `apps/crm/src/i18n/locales/uk.json`.
+- **Build:** `@intlify/unplugin-vue-i18n` precompiles the JSON, so the app ships the runtime-only build with no message compiler.
+- **Keys:** nest them by feature (`products.form.name`), in camelCase.
+- **Missing keys:** `t()` accepts any string, so TypeScript won't catch a misspelled key. ESLint does, through `no-missing-keys`. `no-unused-keys` flags keys nothing uses. HTML in messages and `v-html` are banned.
+- **Bare text:** `vue/no-bare-strings-in-template` fails on template text that doesn't go through `t()`.
 
 When you add a layer rule, extend the pattern lists in `eslint.config.ts`. Options don't merge across config blocks, so each scope lists its full set.
 

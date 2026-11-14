@@ -1,9 +1,12 @@
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import stylistic from '@stylistic/eslint-plugin'
 import vitest from '@vitest/eslint-plugin'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { vueTsConfigs, withVueTs } from '@vue/eslint-config-typescript'
 import type { Linter } from 'eslint'
+import * as jsoncParser from 'jsonc-eslint-parser'
 import pluginVue from 'eslint-plugin-vue'
+import tseslint from 'typescript-eslint'
 
 interface RestrictedPattern { group: string[], message: string }
 
@@ -27,6 +30,8 @@ const coreStaysPure: RestrictedPattern[] = [
   },
 ]
 
+const codeFiles = ['**/*.{ts,mts,vue}']
+
 // `no-restricted-imports` options don't merge across config blocks (the last
 // block wins), so every scope lists its full set of patterns.
 const restrictImports = (patterns: RestrictedPattern[]): Linter.RulesRecord => ({
@@ -46,17 +51,21 @@ export default withVueTs(
   vueTsConfigs.stylisticTypeChecked,
 
   // Formatting: ESLint is the only formatter. Run `pnpm lint:fix` or fix on save.
-  stylistic.configs.customize({
-    indent: 2,
-    quotes: 'single',
-    semi: false,
-    commaDangle: 'always-multiline',
-    braceStyle: '1tbs',
-    arrowParens: true,
-  }),
+  {
+    ...stylistic.configs.customize({
+      indent: 2,
+      quotes: 'single',
+      semi: false,
+      commaDangle: 'always-multiline',
+      braceStyle: '1tbs',
+      arrowParens: true,
+    }),
+    files: codeFiles,
+  },
 
   {
     name: 'auto-crm/typescript',
+    files: codeFiles,
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
@@ -106,6 +115,33 @@ export default withVueTs(
     settings: {
       'better-tailwindcss': { entryPoint: 'apps/crm/src/styles/main.css' },
     },
+  },
+
+  {
+    name: 'auto-crm/i18n',
+    files: ['apps/crm/**/*.{vue,ts}', 'apps/crm/src/i18n/locales/*.json'],
+    plugins: { '@intlify/vue-i18n': vueI18n },
+    rules: {
+      '@intlify/vue-i18n/no-missing-keys': 'error',
+      '@intlify/vue-i18n/no-unused-keys': ['error', { src: 'apps/crm/src', extensions: ['.ts', '.vue'] }],
+      '@intlify/vue-i18n/no-v-html': 'error',
+      '@intlify/vue-i18n/key-format-style': ['error', 'camelCase'],
+      '@intlify/vue-i18n/no-html-messages': 'error',
+      '@intlify/vue-i18n/valid-message-syntax': 'error',
+    },
+    settings: {
+      'vue-i18n': {
+        localeDir: 'apps/crm/src/i18n/locales/*.json',
+        messageSyntaxVersion: '^11.0.0',
+      },
+    },
+  },
+  {
+    name: 'auto-crm/i18n/locales',
+    files: ['apps/crm/src/i18n/locales/*.json'],
+    languageOptions: { parser: jsoncParser },
+    // The typescript-eslint presets apply to every file; JSON has no types.
+    rules: tseslint.configs.disableTypeChecked.rules,
   },
 
   {
