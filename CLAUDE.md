@@ -6,20 +6,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an offline-capable, multi-tenant inventory system for auto shops: one-time license, Ukrainian only, UAH only. `SPEC.md` is the source of truth for requirements, architecture and the roadmap. Read the relevant section before designing anything non-trivial.
 
-The repo is still the stock `create-vue` scaffold: a single Vite app in `src/`, with Pinia, Vue Router and the `@` → `./src` alias. None of the target architecture below exists yet. The spec plans a pnpm workspace with `apps/crm`, `packages/core`, `packages/adapter-supabase` and `supabase/migrations`. ESLint, Vitest, Playwright, Tailwind, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
+The repo is a pnpm workspace:
+- `apps/crm`: the Vue app, with Pinia, Vue Router and the `@` → `apps/crm/src` alias. It is an empty shell so far.
+- `packages/core`: a source-only package (`exports` points at `src/index.ts`, no build step). It is empty so far.
+
+`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Vitest, Playwright, Tailwind, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
 
 ## Commands
 
-Use pnpm. Node must be `^22.18.0 || >=24.12.0`.
+Use pnpm. Node must be `^22.18.0 || >=24.12.0`. Run these from the repo root:
 
-- `pnpm dev`: Vite dev server
-- `pnpm build`: runs type-check and `vite build` in parallel
-- `pnpm type-check`: `vue-tsc --build`
+- `pnpm dev`: Vite dev server for `apps/crm`
+- `pnpm build`: type-check and build `apps/crm`
+- `pnpm type-check`: root config files, then every package (`pnpm -r type-check`)
+- `pnpm lint`: ESLint with `--max-warnings 0`
+- `pnpm lint:fix`: ESLint autofix. This is also the formatter.
 - `pnpm preview`: serve the production build
 
-No lint or test tooling is set up yet.
+No test tooling is set up yet.
 
-TypeScript runs with `noUncheckedIndexedAccess`. Expect `T | undefined` from array and record lookups.
+TypeScript runs with `noUncheckedIndexedAccess`. Expect `T | undefined` from array and record lookups. `packages/core` also enables `exactOptionalPropertyTypes` and has no DOM or Node types.
+
+## Linting and formatting
+
+ESLint is the only formatter, and there is no Prettier. `eslint.config.ts` combines:
+- `eslint-plugin-vue` recommended rules
+- `typescript-eslint` `strictTypeChecked` and `stylisticTypeChecked`
+- `@stylistic`: 2 spaces, single quotes, no semicolons, trailing commas on multiline
+
+VS Code fixes on save through `.vscode/settings.json`.
+
+Import boundaries are enforced with `no-restricted-imports`:
+- `@supabase/*` is allowed only in `packages/adapter-*`.
+- Deep imports into workspace packages (`@auto-crm/core/src/...`) are banned.
+- `packages/core` may not import Vue, Pinia, Dexie, `node:*`, apps or adapters.
+
+`vue/no-bare-strings-in-template` is on, so template text must come from vue-i18n.
+
+When you add a layer rule, extend the pattern lists in `eslint.config.ts`. Options don't merge across config blocks, so each scope lists its full set.
 
 ## Architecture rules (from SPEC.md)
 

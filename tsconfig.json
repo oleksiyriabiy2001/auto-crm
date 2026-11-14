@@ -1,11 +1,12 @@
+// Root-level tooling files (eslint.config.ts). Each workspace package has its own tsconfig.
 {
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.app.json"
-    }
-  ]
+  "extends": "@tsconfig/node24/tsconfig.json",
+  "include": ["*.config.ts"],
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.root.tsbuildinfo"
+  }
 }
