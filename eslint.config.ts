@@ -1,4 +1,5 @@
 import stylistic from '@stylistic/eslint-plugin'
+import vitest from '@vitest/eslint-plugin'
 import { vueTsConfigs, withVueTs } from '@vue/eslint-config-typescript'
 import type { Linter } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
@@ -89,6 +90,20 @@ export default withVueTs(
       'vue/space-unary-ops': 'error',
       'vue/template-curly-spacing': 'error',
     },
+  },
+
+  {
+    name: 'auto-crm/tests',
+    files: ['**/*.test.ts'],
+    plugins: { vitest },
+    rules: {
+      ...vitest.configs.recommended.rules,
+      'vitest/consistent-test-it': ['error', { fn: 'it' }],
+      'vitest/no-focused-tests': 'error',
+      'vitest/prefer-strict-equal': 'error',
+      'vitest/require-to-throw-message': 'error',
+    },
+    settings: { vitest: { typecheck: true } },
   },
 
   {

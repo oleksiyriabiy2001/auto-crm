@@ -10,7 +10,7 @@ The repo is a pnpm workspace:
 - `apps/crm`: the Vue app, with Pinia, Vue Router and the `@` → `apps/crm/src` alias. It is an empty shell so far.
 - `packages/core`: a source-only package (`exports` points at `src/index.ts`, no build step). It is empty so far.
 
-`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Vitest, Playwright, Tailwind, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
+`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Tailwind, Dexie, zod, vue-i18n and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
 
 ## Commands
 
@@ -21,9 +21,12 @@ Use pnpm. Node must be `^22.18.0 || >=24.12.0`. Run these from the repo root:
 - `pnpm type-check`: root config files, then every package (`pnpm -r type-check`)
 - `pnpm lint`: ESLint with `--max-warnings 0`
 - `pnpm lint:fix`: ESLint autofix. This is also the formatter.
+- `pnpm test`: Vitest, run once across all workspace projects
+- `pnpm test:watch`: Vitest in watch mode
+- `pnpm test --project core`: one project only. Add `-t "name"` to filter by test name.
 - `pnpm preview`: serve the production build
 
-No test tooling is set up yet.
+Vitest runs from the root `vitest.config.ts`, and each package is an entry in `test.projects`. Only `core` is registered for now (Node environment, `src/**/*.test.ts`). When `apps/crm` needs tests, add a project with the Vue plugin and a DOM environment. Put tests next to the code as `*.test.ts` and import `describe`/`it`/`expect` from `vitest`, since globals are off. Write `it`, not `test`. The lint rules ban `.only` and require `toStrictEqual`.
 
 TypeScript runs with `noUncheckedIndexedAccess`. Expect `T | undefined` from array and record lookups. `packages/core` also enables `exactOptionalPropertyTypes` and has no DOM or Node types.
 
