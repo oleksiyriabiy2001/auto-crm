@@ -1,81 +1,37 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Offline-capable, multi-tenant inventory system for auto shops: one-time license, Ukrainian only, UAH only. `SPEC.md` is the source of truth for requirements, architecture and the roadmap. Read the relevant section before designing anything non-trivial.
 
-## Project status
+## Repo
 
-This is an offline-capable, multi-tenant inventory system for auto shops: one-time license, Ukrainian only, UAH only. `SPEC.md` is the source of truth for requirements, architecture and the roadmap. Read the relevant section before designing anything non-trivial.
+pnpm workspace:
+- `apps/crm`: the Vue app (Pinia, Vue Router, Tailwind v4, vue-i18n). `@` → `apps/crm/src`.
+- `packages/core`: source-only package (`exports` → `src/index.ts`, no build step). It has no DOM or Node types and adds `exactOptionalPropertyTypes`.
 
-The repo is a pnpm workspace:
-- `apps/crm`: the Vue app, with Pinia, Vue Router, Tailwind v4, vue-i18n and the `@` → `apps/crm/src` alias. It is an empty shell so far.
-- `packages/core`: a source-only package (`exports` points at `src/index.ts`, no build step). It is empty so far.
-
-`packages/adapter-supabase` and `supabase/migrations` don't exist yet. Playwright, Dexie, zod and vite-plugin-pwa are planned but not installed. When you add them, update the commands section below.
+Not built yet: `packages/adapter-supabase` and `supabase/migrations`. Playwright, Dexie, zod and vite-plugin-pwa are planned but not installed. When you add tooling, update this file.
 
 ## Commands
 
-Use pnpm. Node must be `^22.18.0 || >=24.12.0`.
+Run from the repo root:
+- `pnpm dev` / `pnpm build`
+- `pnpm lint` / `pnpm lint:fix`: ESLint is also the formatter. There is no Prettier.
+- `pnpm type-check`
+- `pnpm test`, or `pnpm test --project core -t "name"` for one project or test
 
-pnpm enforces a minimum release age of one day, a supply-chain guard. If a fresh version is rejected, pin the newest version older than a day. Don't add `minimumReleaseAgeExclude` entries. Install scripts are opt-in through `allowBuilds` in `pnpm-workspace.yaml`. `esbuild` is denied there because its prebuilt binary arrives as an optional dependency.
+Git hooks are native config-based hooks in `.githooks.gitconfig`: pre-commit lints staged files, and pre-push runs type-check and tests. CI (`.github/workflows/ci.yml`) runs lint, type-check, test and build on `main` and on PRs. Actions there are pinned to commit SHAs, so keep them pinned.
 
-Run these from the repo root:
+## Dependencies
 
-- `pnpm dev`: Vite dev server for `apps/crm`
-- `pnpm build`: type-check and build `apps/crm`
-- `pnpm type-check`: root config files, then every package (`pnpm -r type-check`)
-- `pnpm lint`: ESLint with `--max-warnings 0`
-- `pnpm lint:fix`: ESLint autofix. This is also the formatter.
-- `pnpm test`: Vitest, run once across all workspace projects
-- `pnpm test:watch`: Vitest in watch mode
-- `pnpm test --project core`: one project only. Add `-t "name"` to filter by test name.
-- `pnpm preview`: serve the production build
+- **Release age:** pnpm refuses versions less than a day old. If a fresh version is rejected, pin the newest version older than a day. Never add `minimumReleaseAgeExclude` entries.
+- **Install scripts:** allowed only through `allowBuilds` in `pnpm-workspace.yaml`.
 
-Vitest runs from the root `vitest.config.ts`, and each package is an entry in `test.projects`. Only `core` is registered for now (Node environment, `src/**/*.test.ts`). When `apps/crm` needs tests, add a project with the Vue plugin and a DOM environment. Put tests next to the code as `*.test.ts` and import `describe`/`it`/`expect` from `vitest`, since globals are off. Write `it`, not `test`. The lint rules ban `.only` and require `toStrictEqual`.
+## Conventions
 
-TypeScript runs with `noUncheckedIndexedAccess`. Expect `T | undefined` from array and record lookups. `packages/core` also enables `exactOptionalPropertyTypes` and has no DOM or Node types.
-
-## Git hooks and CI
-
-Git hooks use Git's native config-based hooks (Git 2.54+), with no husky or lint-staged.
-- **Config:** hooks are defined in `.githooks.gitconfig`. `pnpm install` runs `prepare` (`scripts/setup-git-hooks.sh`), which adds that file to `.git/config` through `include.path`.
-- **pre-commit:** `scripts/pre-commit.sh` runs ESLint on the staged `.ts`, `.vue` and `.json` files, without autofix.
-- **pre-push:** `scripts/pre-push.sh` runs `pnpm type-check` and `pnpm test`.
-- **PATH in git GUIs:** both scripts source `scripts/hook-env.sh`. If `pnpm` isn't on PATH, which happens when VS Code or another git GUI runs the hook without `~/.zshrc`, it borrows PATH from the login shell (`$SHELL -ilc`).
-- **Inspect and run:** `git hook list pre-commit` shows active hooks, and `git hook run pre-commit` runs one by hand.
-
-CI is `.github/workflows/ci.yml`. It runs on pushes to `main`, on pull requests and on manual dispatch. Feature-branch pushes are covered locally by the pre-push hook.
-- **Steps:** frozen install, lint, type-check, test, then `build-only`.
-- **Node version:** read from `.nvmrc`.
-- **pnpm version:** read from `packageManager`, with the pnpm store cached.
-- **Action pins:** actions are pinned to commit SHAs with the release noted in a comment. To bump one, resolve the new tag's commit with `git ls-remote https://github.com/<owner>/<repo>.git 'refs/tags/<tag>^{}' 'refs/tags/<tag>'`.
-
-## Linting and formatting
-
-ESLint is the only formatter, and there is no Prettier. `eslint.config.ts` combines:
-- `eslint-plugin-vue` recommended rules
-- `typescript-eslint` `strictTypeChecked` and `stylisticTypeChecked`
-- `@stylistic`: 2 spaces, single quotes, no semicolons, trailing commas on multiline
-
-VS Code fixes on save through `.vscode/settings.json`.
-
-Import boundaries are enforced with `no-restricted-imports`:
-- `@supabase/*` is allowed only in `packages/adapter-*`.
-- Deep imports into workspace packages (`@auto-crm/core/src/...`) are banned.
-- `packages/core` may not import Vue, Pinia, Dexie, `node:*`, apps or adapters.
-
-Tailwind classes are linted by `eslint-plugin-better-tailwindcss`, which reads the theme from `apps/crm/src/styles/main.css`. Autofix sorts classes and removes duplicates. Unknown and conflicting classes are errors with no autofix.
-
-Tailwind v4 has no `tailwind.config.js`. Put theme tokens in `@theme` in `apps/crm/src/styles/main.css`, and load Tailwind through the `@tailwindcss/vite` plugin.
-
-## i18n
-
-- **Setup:** vue-i18n runs in Composition API mode (`useI18n()`, `t()`). It's configured in `apps/crm/src/i18n/index.ts`, and the messages live in `apps/crm/src/i18n/locales/uk.json`.
-- **Build:** `@intlify/unplugin-vue-i18n` precompiles the JSON, so the app ships the runtime-only build with no message compiler.
-- **Keys:** nest them by feature (`products.form.name`), in camelCase.
-- **Missing keys:** `t()` accepts any string, so TypeScript won't catch a misspelled key. ESLint does, through `no-missing-keys`. `no-unused-keys` flags keys nothing uses. HTML in messages and `v-html` are banned.
-- **Bare text:** `vue/no-bare-strings-in-template` fails on template text that doesn't go through `t()`.
-
-When you add a layer rule, extend the pattern lists in `eslint.config.ts`. Options don't merge across config blocks, so each scope lists its full set.
+- **TypeScript:** `noUncheckedIndexedAccess` is on, so expect `T | undefined` from array and record lookups.
+- **Tests:** put them next to the code as `*.test.ts`, and import from `vitest` because globals are off. Register new packages in `test.projects` in the root `vitest.config.ts`.
+- **Tailwind v4:** there is no `tailwind.config.js`. Theme tokens go in `@theme` in `apps/crm/src/styles/main.css`.
+- **i18n:** messages live in `apps/crm/src/i18n/locales/uk.json`. Use camelCase keys nested by feature (`products.form.name`). All UI text goes through `t()`. Format dates and numbers with `Intl`, and money from its currency code.
+- **ESLint boundaries:** they are `no-restricted-imports` pattern lists in `eslint.config.ts`. Options don't merge across config blocks, so each scope must list its full set.
 
 ## Architecture rules (from SPEC.md)
 
@@ -90,13 +46,12 @@ Layers, top to bottom. Each layer calls only the layer below it:
 6. **`RemoteGateway`.** Interface in `core` with `auth`, `pushOperations`, `pullChanges` and `bootstrap`. Only adapter packages implement it.
 
 Hard rules:
-- **Only adapter packages may import `@supabase/supabase-js`.** ESLint `no-restricted-imports` will enforce this.
+- **Imports.** Only `packages/adapter-*` may import `@supabase/*`. `packages/core` may not import Vue, Pinia, Dexie, `node:*`, apps or adapters. Import workspace packages only from their entry point. ESLint enforces all of this.
 - **Business rules live in exactly two places.** One is pure functions in `packages/core`. The other is the single server-side unit that applies pushed operations (one SQL function now). DB triggers handle only `server_seq`, `updated_at` and the audit log.
 - **The sync contract is defined once, as zod schemas in `core`.** It consists of `bootstrap`, `push(operations)` (returns accepted, duplicate or rejected per op) and `pull(cursor)` (returns changed rows including tombstones, plus the new cursor).
 - **Migrations are plain SQL for standard PostgreSQL.** Don't use Supabase-only features in table design.
 - **Only the public key ships in the client.** The service-role key appears only in server functions and provisioning scripts.
 - **Validate with zod at every boundary:** forms, scanner input, CSV rows and server-side sync payloads.
-- **All UI text goes through `vue-i18n`.** Format dates and numbers with `Intl`, and format money from its currency code.
 
 ## Data model invariants
 
@@ -122,4 +77,78 @@ Hard rules:
 
 ## Supabase
 
-`.mcp.json` configures the Supabase MCP server in **read-only** mode against one project. Use it to inspect schema, logs and advisors. Schema changes go through SQL files in `supabase/migrations`, not through the MCP. Supabase skills are vendored under `.agents/skills/`, with symlinks in `.claude/skills/`. Load `supabase-postgres-best-practices` before writing schema, RLS or SQL functions.
+`.mcp.json` configures the Supabase MCP server in **read-only** mode. Use it to inspect schema, logs and advisors. Schema changes go through SQL files in `supabase/migrations`, never through the MCP. Load the `supabase-postgres-best-practices` skill before writing schema, RLS or SQL functions.
+
+## Working style
+
+Behavioral guidelines to reduce common LLM coding mistakes. Where they overlap with the project rules above, the project rules win.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- Check SPEC.md and this file first. Ask only when they don't answer the question.
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Structure the architecture rules require is not speculative. Build it even when it looks like overkill today:
+- repository and `RemoteGateway` interfaces, even with one implementation
+- adapter packages
+- i18n for all text, even with one language
+- `currency` columns, even with one currency
+- zod validation at every boundary, even for data that looks trusted
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently. Style means whatever `pnpm lint:fix` produces. The tree is lint-clean, so running it touches only your lines.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+Done means `pnpm lint`, `pnpm type-check` and `pnpm test` all pass. Unit tests currently run only in `packages/core`. Until `apps/crm` has a Vitest project, verify app code with type-check and by running the app.
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
