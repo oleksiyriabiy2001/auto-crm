@@ -16,5 +16,13 @@
   "eslint.useFlatConfig": true,
 
   // Tailwind v4 at-rules (@theme, @apply) in CSS files.
-  "files.associations": { "*.css": "tailwindcss" }
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "cSpell.words": [
+    "Barcodes",
+    "Dexie",
+    "llms",
+    "supabase"
+  ]
 }
