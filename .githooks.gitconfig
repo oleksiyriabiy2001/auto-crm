@@ -1,0 +1,11 @@
+# Git hooks for this repo, using Git's native config-based hooks (Git 2.54+).
+# `pnpm install` includes this file from .git/config (see scripts/setup-git-hooks.sh).
+# List active hooks with `git hook list pre-commit`. Skip once with `git commit --no-verify`.
+
+[hook "lint-staged"]
+  event = pre-commit
+  command = sh scripts/pre-commit.sh
+
+[hook "verify"]
+  event = pre-push
+  command = sh scripts/pre-push.sh

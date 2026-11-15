@@ -15,7 +15,8 @@
     "lint": "eslint --cache --max-warnings 0 .",
     "lint:fix": "eslint --cache --fix .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "sh scripts/setup-git-hooks.sh"
   },
   "devDependencies": {
     "@intlify/eslint-plugin-vue-i18n": "^4.5.1",

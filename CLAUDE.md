@@ -34,6 +34,21 @@ Vitest runs from the root `vitest.config.ts`, and each package is an entry in `t
 
 TypeScript runs with `noUncheckedIndexedAccess`. Expect `T | undefined` from array and record lookups. `packages/core` also enables `exactOptionalPropertyTypes` and has no DOM or Node types.
 
+## Git hooks and CI
+
+Git hooks use Git's native config-based hooks (Git 2.54+), with no husky or lint-staged.
+- **Config:** hooks are defined in `.githooks.gitconfig`. `pnpm install` runs `prepare` (`scripts/setup-git-hooks.sh`), which adds that file to `.git/config` through `include.path`.
+- **pre-commit:** `scripts/pre-commit.sh` runs ESLint on the staged `.ts`, `.vue` and `.json` files, without autofix.
+- **pre-push:** `scripts/pre-push.sh` runs `pnpm type-check` and `pnpm test`.
+- **PATH in git GUIs:** both scripts source `scripts/hook-env.sh`. If `pnpm` isn't on PATH, which happens when VS Code or another git GUI runs the hook without `~/.zshrc`, it borrows PATH from the login shell (`$SHELL -ilc`).
+- **Inspect and run:** `git hook list pre-commit` shows active hooks, and `git hook run pre-commit` runs one by hand.
+
+CI is `.github/workflows/ci.yml`. It runs on pushes to `main`, on pull requests and on manual dispatch. Feature-branch pushes are covered locally by the pre-push hook.
+- **Steps:** frozen install, lint, type-check, test, then `build-only`.
+- **Node version:** read from `.nvmrc`.
+- **pnpm version:** read from `packageManager`, with the pnpm store cached.
+- **Action pins:** actions are pinned to commit SHAs with the release noted in a comment. To bump one, resolve the new tag's commit with `git ls-remote https://github.com/<owner>/<repo>.git 'refs/tags/<tag>^{}' 'refs/tags/<tag>'`.
+
 ## Linting and formatting
 
 ESLint is the only formatter, and there is no Prettier. `eslint.config.ts` combines:
