@@ -21,6 +21,7 @@ describe('PushResponseSchema', () => {
         { operationId, status: 'accepted' },
         { operationId, status: 'duplicate' },
         { operationId, status: 'rejected', reason: 'barcodeConflict' },
+        { operationId, status: 'rejected', reason: 'skuConflict' },
       ],
     }
     expect(PushResponseSchema.parse(response)).toStrictEqual(response)

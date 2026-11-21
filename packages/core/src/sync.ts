@@ -23,6 +23,7 @@ export const RejectReasonSchema = z.enum([
   'forbidden', // the role does not allow it (re-checked at push time)
   'tenantSuspended',
   'barcodeConflict', // the barcode already belongs to another product
+  'skuConflict', // another product in the shop already has this SKU
   'notFound',
   'invalidPayload',
 ])
