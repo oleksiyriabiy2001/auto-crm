@@ -16,6 +16,7 @@
     "lint:fix": "eslint --cache --fix .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:contract": "vitest run --config vitest.contract.config.ts",
     "prepare": "sh scripts/setup-git-hooks.sh"
   },
   "devDependencies": {

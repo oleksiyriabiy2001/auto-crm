@@ -12,7 +12,10 @@ pnpm workspace:
 - `packages/core`: source-only package (`exports` → `src/index.ts`, no build step). It has no DOM or Node types and adds `exactOptionalPropertyTypes`. Uses zod 4 (`import { z } from 'zod'`). Schemas are named `XSchema` with their inferred type `X`. Fields are camelCase.
 - `supabase/`: local Supabase project. `migrations/` holds plain SQL; `tests/database/` holds pgTAP tests. The sync API is three SQL functions (`public.push`, `public.pull`, `public.bootstrap`) that take and return exactly the camelCase JSON of the zod contract; columns are snake_case. Clients only read tables (RLS) and write only through `push`. Grants are explicit allow-lists: a new table or function gets no client access until its migration grants it.
 
-Not built yet: `packages/adapter-supabase`. Playwright, Dexie and vite-plugin-pwa are planned but not installed. When you add tooling, update this file.
+- `packages/adapter-supabase`: `createSupabaseGateway({ url, publishableKey })`, the `RemoteGateway` for Supabase. It validates every response with the core schemas. Same tsconfig as core plus DOM types.
+- `packages/contract-tests`: `describeGatewayContract(harness)`, the shared suite every adapter must pass (SPEC.md "Contract tests"). Each adapter runs it from a `*.contract.test.ts` file with a harness that provisions two shops; register that project in `vitest.contract.config.ts`.
+
+Playwright, Dexie and vite-plugin-pwa are planned but not installed. When you add tooling, update this file.
 
 ## Commands
 
@@ -24,8 +27,9 @@ Run from the repo root:
 - `supabase start` / `supabase stop`: local Supabase in Docker (needs Docker running)
 - `supabase db reset`: re-apply all migrations to the local database
 - `supabase test db`: run the pgTAP tests, including the tenant isolation gate
+- `pnpm test:contract`: run the contract suite against local Supabase (needs `supabase start`; not part of `pnpm test`)
 
-Git hooks are native config-based hooks in `.githooks.gitconfig`: pre-commit lints staged files, and pre-push runs type-check and tests. CI (`.github/workflows/ci.yml`) runs lint, type-check, test and build on `main` and on PRs. Actions there are pinned to commit SHAs, so keep them pinned.
+Git hooks are native config-based hooks in `.githooks.gitconfig`: pre-commit lints staged files, and pre-push runs type-check and tests. CI (`.github/workflows/ci.yml`) runs lint, type-check, test and build on `main` and on PRs, and a second job starts local Supabase and runs the pgTAP tests and the contract tests. Actions there are pinned to commit SHAs, so keep them pinned.
 
 ## Dependencies
 

@@ -47,3 +47,37 @@ jobs:
       - run: pnpm test
 
       - run: pnpm --filter @auto-crm/crm build-only
+
+  backend:
+    name: Database and contract tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          cache: true
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 3.2.0
+
+      # Postgres, Auth, PostgREST and the API gateway: what the tests use.
+      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      # pgTAP, including the tenant isolation tests (the phase 1 gate).
+      - run: supabase test db
+
+      # The shared RemoteGateway contract suite against the Supabase adapter.
+      - run: pnpm test:contract
