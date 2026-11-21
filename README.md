@@ -2,20 +2,25 @@
 
 An offline-capable inventory system for auto shops: multi-tenant, Ukrainian UI, prices in UAH. The app works against a local database in the browser and syncs with the backend (Supabase for now) when it's online.
 
-[SPEC.md](SPEC.md) holds the requirements, architecture and roadmap. [CLAUDE.md](CLAUDE.md) is a short summary of the rules, written for AI coding assistants.
+[SPEC.md](SPEC.md) holds the requirements, architecture and roadmap. [CLAUDE.md](CLAUDE.md) is a short summary of the rules, written for AI coding assistants. More detailed rules sit in `CLAUDE.md` files inside `apps/crm`, `packages` and `supabase`.
 
 ## Requirements
 
 - **Node.js** `^22.18.0` or `>=24.12.0`. CI uses the version in [.nvmrc](.nvmrc), so with nvm, run `nvm use`.
 - **pnpm** 12. The exact version is in `packageManager` in [package.json](package.json).
 - **Git** 2.54 or newer, for the git hooks. Check with `git --version`.
+- **Supabase CLI** and **Docker**, for the local backend. Docker must be running before `supabase start`.
 
 ## Getting started
 
 ```sh
-pnpm install   # also installs the git hooks
-pnpm dev       # http://localhost:5173
+pnpm install      # also installs the git hooks
+supabase start    # local backend in Docker
+supabase db reset # apply migrations and the demo seed
+pnpm dev          # http://localhost:5173
 ```
+
+The seed creates a demo shop with three accounts: `owner@example.com`, `admin@example.com` and `staff@example.com`, all with the password `password123`. Password reset emails land in Mailpit at http://127.0.0.1:54324. Local Supabase URL and key defaults are in `apps/crm/.env.development`.
 
 ## Scripts
 
@@ -31,17 +36,22 @@ Run these from the repo root.
 | `pnpm type-check` | Type-check every package |
 | `pnpm test` | Run the unit tests once |
 | `pnpm test:watch` | Run the unit tests in watch mode |
+| `pnpm test:contract` | Run the adapter contract tests against local Supabase (needs `supabase start`) |
+| `supabase start` / `supabase stop` | Start or stop local Supabase in Docker |
+| `supabase db reset` | Re-apply all migrations and `supabase/seed.sql` |
+| `supabase test db` | Run the pgTAP database tests, including tenant isolation |
 
 ## Project structure
 
 ```
-apps/crm/          Vue 3 app: Pinia, Vue Router, Tailwind CSS v4, vue-i18n
-packages/core/     Domain types, business rules and interfaces. No Vue, no database code.
-scripts/           Git hook scripts
-.github/workflows/ CI
+apps/crm/                   Vue 3 app: Pinia, Vue Router, Tailwind CSS v4, vue-i18n
+packages/core/              Domain types, zod sync contract, interfaces and business rules. No Vue, no database code.
+packages/adapter-supabase/  RemoteGateway implementation for Supabase
+packages/contract-tests/    Shared test suite every RemoteGateway adapter must pass
+supabase/                   Local Supabase project: SQL migrations, pgTAP tests, seed
+scripts/                    Git hook scripts
+.github/workflows/          CI
 ```
-
-`packages/adapter-supabase` and `supabase/migrations` will be added as the roadmap reaches them.
 
 ## Code style
 
@@ -73,7 +83,10 @@ Reconnecting is needed only if `git hook list` shows nothing. That happens in an
 
 ## CI
 
-[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on pushes to `main`, on pull requests and on manual runs. It installs from the lockfile, then runs lint, type-check, tests and the build.
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on pushes to `main`, on pull requests and on manual runs. It has two jobs:
+
+- **Lint, type-check, test, build** installs from the lockfile and runs those four steps.
+- **Database and contract tests** starts local Supabase, then runs the pgTAP tests and the contract tests.
 
 ### Updating a GitHub Action
 
