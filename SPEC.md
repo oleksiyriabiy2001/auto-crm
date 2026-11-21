@@ -126,7 +126,7 @@ The whole backend surface for sync is two calls, defined as zod schemas in `core
 - `push(operations)` returns one result per operation: accepted, duplicate, or rejected with a reason.
 - `pull(cursor)` returns rows changed since the cursor, including tombstones, and the new cursor. Every synced row carries a monotonically increasing `server_seq`.
 
-Operation types in v1: `product.create`, `product.update`, `product.delete`, `barcode.add`, `barcode.remove`, `stock.move`. Each operation carries `id`, `type`, `payload`, the version it was based on where relevant, the client timestamp and a device id.
+Operation types in v1: `product.create`, `product.update`, `product.delete`, `product.restore`, `barcode.add`, `barcode.remove`, `stock.move`. Each operation carries `id`, `type`, `payload`, the version it was based on where relevant, the client timestamp and a device id.
 
 ## Data model
 
@@ -180,9 +180,10 @@ Staff permissions are a proposed default; see the open questions.
 | Scan and look up | Yes | Yes | Yes |
 | Record receive, sale and consume movements | Yes | Yes | Yes |
 | Create products, including from a scan | Yes | Yes | Yes |
-| Edit existing products and barcodes | No | Yes | Yes |
+| Add a barcode to an existing product | Yes | Yes | Yes |
+| Edit existing products and remove barcodes | No | Yes | Yes |
 | Delete and restore products | No | Yes | Yes |
-| Adjustments and write-offs | No | Yes | Yes |
+| Adjustments, write-offs and initial counts | No | Yes | Yes |
 | See cost prices, analytics and the audit log | No | Yes | Yes |
 | Import and export CSV | No | Yes | Yes |
 | Manage the shop's users | No | No | Yes |

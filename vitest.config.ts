@@ -4,8 +4,6 @@ import { defineConfig } from 'vitest/config'
 // `pnpm test` runs everything and `pnpm test --project core` runs one package.
 export default defineConfig({
   test: {
-    // Remove once packages/core has its first tests.
-    passWithNoTests: true,
     projects: [
       {
         test: {

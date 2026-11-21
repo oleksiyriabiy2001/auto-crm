@@ -9,9 +9,9 @@ Use the docs-explorer subagent for efficient documentation lookup.
 
 pnpm workspace:
 - `apps/crm`: the Vue app (Pinia, Vue Router, Tailwind v4, vue-i18n). `@` → `apps/crm/src`.
-- `packages/core`: source-only package (`exports` → `src/index.ts`, no build step). It has no DOM or Node types and adds `exactOptionalPropertyTypes`.
+- `packages/core`: source-only package (`exports` → `src/index.ts`, no build step). It has no DOM or Node types and adds `exactOptionalPropertyTypes`. Uses zod 4 (`import { z } from 'zod'`). Schemas are named `XSchema` with their inferred type `X`. Fields are camelCase; adapters map them to snake_case columns.
 
-Not built yet: `packages/adapter-supabase` and `supabase/migrations`. Playwright, Dexie, zod and vite-plugin-pwa are planned but not installed. When you add tooling, update this file.
+Not built yet: `packages/adapter-supabase` and `supabase/migrations`. Playwright, Dexie and vite-plugin-pwa are planned but not installed. When you add tooling, update this file.
 
 ## Commands
 
