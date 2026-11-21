@@ -127,8 +127,19 @@ export const describeGatewayContract = (harness: ContractHarness): void => {
         expect(session?.email).toBe(shopA.staff.email)
       })
 
-      it('rejects a wrong password', async () => {
-        await expect(shopB.staff.gateway.auth.signIn(shopB.staff.email, 'wrong-password')).rejects.toThrow()
+      it('rejects a wrong password as invalid credentials', async () => {
+        await expect(shopB.staff.gateway.auth.signIn(shopB.staff.email, 'wrong-password'))
+          .rejects.toMatchObject({ name: 'GatewayError', code: 'invalidCredentials' })
+      })
+
+      it('changes the password of the signed-in user', async () => {
+        const { gateway, email, password } = shopB.admin
+        const newPassword = `${password}-new`
+        await expect(gateway.auth.updatePassword(password)).rejects.toMatchObject({ code: 'samePassword' })
+        await gateway.auth.updatePassword(newPassword)
+        await expect(gateway.auth.signIn(email, password)).rejects.toMatchObject({ code: 'invalidCredentials' })
+        await gateway.auth.signIn(email, newPassword)
+        shopB.admin.password = newPassword
       })
 
       it('has no session after signing out, and can sign in again', async () => {

@@ -13,12 +13,35 @@ export interface AuthSession {
   expiresAt: UtcTimestamp
 }
 
+// Why an auth call failed, independent of the backend. Adapters translate
+// their own errors into these so screens can show the right message.
+export type GatewayErrorCode
+  = | 'invalidCredentials' // wrong email or password
+    | 'weakPassword' // the new password is rejected as too weak
+    | 'samePassword' // the new password equals the current one
+    | 'network' // the backend could not be reached
+    | 'unknown'
+
+export class GatewayError extends Error {
+  readonly code: GatewayErrorCode
+
+  constructor(code: GatewayErrorCode, options?: { cause?: unknown }) {
+    super(`Gateway error: ${code}`, options)
+    this.name = 'GatewayError'
+    this.code = code
+  }
+}
+
+// Every method rejects with a GatewayError.
 export interface RemoteAuth {
   signIn: (email: string, password: string) => Promise<AuthSession>
   signOut: () => Promise<void>
   // The cached session, or null when signed out. Works offline.
   getSession: () => Promise<AuthSession | null>
+  // Emails a link that opens the app's set-password screen signed in.
   requestPasswordReset: (email: string) => Promise<void>
+  // Sets a new password for the signed-in user, e.g. after the reset link.
+  updatePassword: (password: string) => Promise<void>
 }
 
 // The whole backend surface. Only the sync engine calls it, and only adapter

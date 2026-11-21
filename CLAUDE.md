@@ -8,7 +8,7 @@ Use the docs-explorer subagent for efficient documentation lookup.
 ## Repo
 
 pnpm workspace:
-- `apps/crm`: the Vue app (Pinia, Vue Router, Tailwind v4, vue-i18n). `@` → `apps/crm/src`.
+- `apps/crm`: the Vue app (Pinia, Vue Router, Tailwind v4, vue-i18n). `@` → `apps/crm/src`. `src/gateway.ts` is the only place that picks the backend; only services and the sync engine import it. Folder layout: see "Project structure" below. Supabase URL and publishable key come from `VITE_SUPABASE_*` env vars (`.env.development` holds the local defaults). Routes need a session unless `meta.public` is set.
 - `packages/core`: source-only package (`exports` → `src/index.ts`, no build step). It has no DOM or Node types and adds `exactOptionalPropertyTypes`. Uses zod 4 (`import { z } from 'zod'`). Schemas are named `XSchema` with their inferred type `X`. Fields are camelCase.
 - `supabase/`: local Supabase project. `migrations/` holds plain SQL; `tests/database/` holds pgTAP tests. The sync API is three SQL functions (`public.push`, `public.pull`, `public.bootstrap`) that take and return exactly the camelCase JSON of the zod contract; columns are snake_case. Clients only read tables (RLS) and write only through `push`. Grants are explicit allow-lists: a new table or function gets no client access until its migration grants it.
 
@@ -25,7 +25,7 @@ Run from the repo root:
 - `pnpm type-check`
 - `pnpm test`, or `pnpm test --project core -t "name"` for one project or test
 - `supabase start` / `supabase stop`: local Supabase in Docker (needs Docker running)
-- `supabase db reset`: re-apply all migrations to the local database
+- `supabase db reset`: re-apply all migrations and `supabase/seed.sql` (demo shop; `owner@`, `admin@` and `staff@example.com`, password `password123`). Password reset emails land in Mailpit at http://127.0.0.1:54324.
 - `supabase test db`: run the pgTAP tests, including the tenant isolation gate
 - `pnpm test:contract`: run the contract suite against local Supabase (needs `supabase start`; not part of `pnpm test`)
 
@@ -43,6 +43,43 @@ Git hooks are native config-based hooks in `.githooks.gitconfig`: pre-commit lin
 - **Tailwind v4:** there is no `tailwind.config.js`. Theme tokens go in `@theme` in `apps/crm/src/styles/main.css`.
 - **i18n:** messages live in `apps/crm/src/i18n/locales/uk.json`. Use camelCase keys nested by feature (`products.form.name`). All UI text goes through `t()`. Format dates and numbers with `Intl`, and money from its currency code.
 - **ESLint boundaries:** they are `no-restricted-imports` pattern lists in `eslint.config.ts`. Options don't merge across config blocks, so each scope must list its full set.
+
+## Project structure (apps/crm)
+
+Code is grouped by feature, not by kind. There are no app-wide `stores/`, `services/` or `components/` folders except under `src/shared/`.
+
+```
+src/
+  features/
+    <feature>/                  one feature: a page or a group of related pages
+      <Name>View.vue            the pages
+      <feature>.routes.ts       exports `<feature>Routes: RouteRecordRaw[]`
+      <feature>.service.ts      class + exported instance (see below)
+      <feature>.store.ts        Pinia store
+      <feature>.types.ts        types
+      <feature>.schema.ts       zod form schemas
+      components/               PascalCase .vue files
+      composables/              use<Name>.ts
+  shared/                       used by several features
+    services/  stores/  components/  composables/
+  data/                         (phase 2) repositories and the local database
+  sync/                         (phase 2) the sync engine
+  router/index.ts               combines the features' routes, guards sign-in
+  gateway.ts                    picks the backend (composition root)
+```
+
+- **Features own their files.** Everything in a feature folder is for that feature only. Create only the files a feature needs. Related pages that share code (for example login, forgot password and set password) form one feature.
+- **Imports.** Inside a feature, import its own files relatively (`./auth.schema`). A feature never imports another feature; move what both need to `src/shared/`. `src/shared/` never imports a feature. ESLint enforces both.
+- **File names.** `<name>.store.ts`, `<name>.service.ts`, `<name>.routes.ts`, `<name>.types.ts`, `<name>.schema.ts`, named after the feature or the shared concern (`session.store.ts`, `auth.service.ts`). Pages end in `View.vue`.
+- **Services** are classes with one method per use case. Dependencies come in through the constructor, and the file exports one instance, so tests can build their own with fakes:
+  ```ts
+  export class AuthService {
+    constructor(private readonly gateway: RemoteGateway) {}
+    signIn(email: string, password: string) { return this.gateway.auth.signIn(email, password) }
+  }
+  export const authService = new AuthService(gateway)
+  ```
+- **Stores** use the setup-function form of `defineStore`, export `use<Name>Store`, and call services, never the gateway.
 
 ## Architecture rules (from SPEC.md)
 

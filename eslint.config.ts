@@ -30,6 +30,17 @@ const coreStaysPure: RestrictedPattern[] = [
   },
 ]
 
+// App structure (CLAUDE.md "Project structure"): a feature imports its own
+// files relatively and never another feature; shared code imports no feature.
+const noCrossFeatureImports: RestrictedPattern = {
+  group: ['@/features/*'],
+  message: 'A feature may not import another feature. Import your own feature relatively, and move what both need to src/shared.',
+}
+const sharedImportsNoFeature: RestrictedPattern = {
+  group: ['@/features/*', '**/features/**'],
+  message: 'src/shared is used by every feature and may not import one.',
+}
+
 const codeFiles = ['**/*.{ts,mts,vue}']
 
 // `no-restricted-imports` options don't merge across config blocks (the last
@@ -166,6 +177,16 @@ export default withVueTs(
     name: 'auto-crm/boundaries/core',
     files: ['packages/core/**'],
     rules: restrictImports([supabaseOnlyInAdapters, noDeepPackageImports, ...coreStaysPure]),
+  },
+  {
+    name: 'auto-crm/boundaries/features',
+    files: ['apps/crm/src/features/**'],
+    rules: restrictImports([supabaseOnlyInAdapters, noDeepPackageImports, noCrossFeatureImports]),
+  },
+  {
+    name: 'auto-crm/boundaries/shared',
+    files: ['apps/crm/src/shared/**'],
+    rules: restrictImports([supabaseOnlyInAdapters, noDeepPackageImports, sharedImportsNoFeature]),
   },
   {
     name: 'auto-crm/boundaries/adapters',
