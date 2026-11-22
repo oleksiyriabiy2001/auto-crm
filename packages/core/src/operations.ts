@@ -154,6 +154,10 @@ const MOVEMENT_CAPABILITY: Record<MovementType, Capability> = {
   write_off: 'adjustStock',
 }
 
+// The capability needed to record a movement of `type`, so screens offer only
+// the types the role may record.
+export const movementCapability = (type: MovementType): Capability => MOVEMENT_CAPABILITY[type]
+
 // The capability the server checks at push time before applying `operation`.
 export const requiredCapability = (operation: Operation): Capability => {
   switch (operation.type) {
@@ -173,6 +177,6 @@ export const requiredCapability = (operation: Operation): Capability => {
     case 'product.restore':
       return 'deleteProduct'
     case 'stock.move':
-      return MOVEMENT_CAPABILITY[operation.payload.type]
+      return movementCapability(operation.payload.type)
   }
 }

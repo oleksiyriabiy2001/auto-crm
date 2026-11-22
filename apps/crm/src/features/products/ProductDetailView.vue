@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import MovementForm from './components/MovementForm.vue'
 import { useMovementTypeLabel } from './composables/useMovementTypeLabel'
 import { useUnitLabel } from './composables/useUnitLabel'
 import { categoryOptions } from './product-filter'
@@ -244,6 +245,8 @@ const quantityClass = computed(() => {
           </template>
         </dl>
       </div>
+
+      <MovementForm :product="product" />
 
       <div class="rounded-xl bg-white p-4 ring-1 ring-gray-200">
         <h2 class="mb-2 font-semibold">

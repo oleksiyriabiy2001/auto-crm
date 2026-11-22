@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Operation } from './operations'
-import { OperationSchema, requiredCapability } from './operations'
+import { movementCapability, OperationSchema, requiredCapability } from './operations'
 
 const envelope = {
   id: '01890a5d-ac96-774b-bcce-b302099a8060',
@@ -134,5 +134,12 @@ describe('requiredCapability', () => {
     [stockMove('write_off', -1), 'adjustStock'],
   ])('%#: needs %s', (input, capability) => {
     expect(requiredCapability(parse(input))).toBe(capability)
+  })
+})
+
+describe('movementCapability', () => {
+  it('lets every role receive, sell and consume, and only admins adjust, write off or set a starting count', () => {
+    expect(movementCapability('receive')).toBe('recordMovement')
+    expect(movementCapability('write_off')).toBe('adjustStock')
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ProductForm } from './products.schema'
-import { invalidFields, ProductFormSchema, toMoneyText, toQuantityText } from './products.schema'
+import type { MovementForm, ProductForm } from './products.schema'
+import { invalidFields, MovementFormSchema, ProductFormSchema, toMoneyText, toQuantityText } from './products.schema'
 
 const form: ProductForm = {
   name: ' Фільтр масляний ',
@@ -72,5 +72,28 @@ describe('form text from stored values', () => {
   it('reads back what it writes', () => {
     expect(parse({ salePrice: toMoneyText(123_456), minStock: toQuantityText(2.25) }).data)
       .toMatchObject({ salePriceMinor: 123_456, minStock: 2.25 })
+  })
+})
+
+describe('MovementFormSchema', () => {
+  const movement = (fields: Partial<MovementForm>) =>
+    MovementFormSchema.safeParse({ type: 'sale', quantity: '1', note: '', ...fields })
+  const invalid = (fields: Partial<MovementForm>) => {
+    const result = movement(fields)
+    return result.error ? invalidFields(result.error) : {}
+  }
+
+  it('reads the quantity as typed and a blank note as none', () => {
+    expect(movement({ quantity: ' 1,5 ' }).data).toStrictEqual({ type: 'sale', quantity: 1.5, note: null })
+    expect(movement({ type: 'adjustment', quantity: '-0,25', note: 'Брак' }).data?.quantity).toBe(-0.25)
+  })
+
+  it.each(['', '0', '-1', 'abc', '1,2345'])('refuses the sale quantity "%s"', (quantity) => {
+    expect(invalid({ quantity })).toStrictEqual({ quantity: true })
+  })
+
+  it('needs a note for an adjustment only', () => {
+    expect(invalid({ type: 'adjustment', quantity: '2', note: '  ' })).toStrictEqual({ note: true })
+    expect(invalid({ type: 'write_off', quantity: '2' })).toStrictEqual({})
   })
 })
