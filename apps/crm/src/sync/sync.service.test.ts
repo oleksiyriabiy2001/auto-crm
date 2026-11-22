@@ -88,6 +88,28 @@ describe('SyncService', () => {
     await expect(service.start(session)).rejects.toMatchObject({ code: 'network' })
   })
 
+  it('gives services the shop context while started, and none after stop', async () => {
+    expect(service.getContext()).toBeNull()
+    await service.start(session)
+
+    expect(service.getContext()).toMatchObject({
+      tenantId: FAKE_TENANT,
+      userId: FAKE_USER,
+      role: 'staff',
+      deviceId: await device.getDeviceId(),
+    })
+    expect(await service.getContext()?.repositories.outbox.listUnconfirmed(FAKE_USER)).toStrictEqual([])
+
+    service.stop()
+    expect(service.getContext()).toBeNull()
+  })
+
+  it('has no shop context when start fails', async () => {
+    online = false
+    await expect(service.start(session)).rejects.toMatchObject({ code: 'network' })
+    expect(service.getContext()).toBeNull()
+  })
+
   it('does not fall back when the server denies access', async () => {
     await device.saveBootstrap(FAKE_USER, gateway.bootstrapResponse)
     vi.spyOn(gateway, 'bootstrap').mockRejectedValue(new GatewayError('accessDenied'))

@@ -1,4 +1,4 @@
-import type { AuthSession, BootstrapResponse, DeviceRepository, Id, RemoteGateway } from '@auto-crm/core'
+import type { AuthSession, BootstrapResponse, DeviceRepository, Id, RemoteGateway, Role, TransactionRunner } from '@auto-crm/core'
 import { GatewayError } from '@auto-crm/core'
 
 import { DeviceDatabase, DexieDeviceRepository } from '@/data/device-database'
@@ -14,7 +14,7 @@ import {
 } from '@/data/repositories'
 import { gateway } from '@/gateway'
 
-import type { SyncEngineOptions, SyncStatus } from './sync-engine'
+import type { SyncEngineOptions, SyncRepositories, SyncStatus } from './sync-engine'
 import { SyncEngine } from './sync-engine'
 
 export interface SyncServiceDeps {
@@ -29,7 +29,19 @@ export interface SyncServiceDeps {
   engineOptions?: Partial<SyncEngineOptions>
 }
 
+// What services need to work in the signed-in user's shop: who is acting,
+// on which device, and the shop's local database.
+export interface ShopContext {
+  tenantId: Id
+  userId: Id
+  role: Role
+  deviceId: Id
+  repositories: SyncRepositories
+  transactions: TransactionRunner
+}
+
 interface ActiveSync {
+  context: ShopContext
   engine: SyncEngine
   db: LocalDatabase
   stopWatching: () => void
@@ -50,11 +62,15 @@ export class SyncService {
   async start(session: AuthSession): Promise<BootstrapResponse> {
     this.stop()
     const bootstrap = await this.loadBootstrap(session.userId)
+    const deviceId = await this.deps.device.getDeviceId()
 
     const db = this.deps.openDatabase(bootstrap.tenant.id)
-    const engine = new SyncEngine(
-      this.deps.gateway,
-      {
+    const context: ShopContext = {
+      tenantId: bootstrap.tenant.id,
+      userId: session.userId,
+      role: bootstrap.membership.role,
+      deviceId,
+      repositories: {
         categories: new DexieCategoryRepository(db),
         products: new DexieProductRepository(db),
         barcodes: new DexieProductBarcodeRepository(db),
@@ -62,7 +78,12 @@ export class SyncService {
         outbox: new DexieOutboxRepository(db),
         syncState: new DexieSyncStateRepository(db),
       },
-      new DexieTransactionRunner(db),
+      transactions: new DexieTransactionRunner(db),
+    }
+    const engine = new SyncEngine(
+      this.deps.gateway,
+      context.repositories,
+      context.transactions,
       session.userId,
       {
         withLock: (work) => this.deps.lock(`auto-crm-sync-${bootstrap.tenant.id}`, work),
@@ -70,6 +91,7 @@ export class SyncService {
       },
     )
     this.active = {
+      context,
       engine,
       db,
       unsubscribe: engine.subscribe((status) => {
@@ -96,6 +118,11 @@ export class SyncService {
     unsubscribe()
     db.close()
     this.active = null
+  }
+
+  // The signed-in user's shop, or null while no one is signed in.
+  getContext(): ShopContext | null {
+    return this.active?.context ?? null
   }
 
   requestSync(): void {
