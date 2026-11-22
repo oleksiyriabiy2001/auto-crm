@@ -39,6 +39,13 @@ export const validateMovement = ({ type, quantityDelta, note }: MovementInput): 
   return null
 }
 
+// The ledger delta for a quantity the user typed. Users type how much was
+// received, sold or written off, so only an adjustment keeps its own sign; a
+// negative entry for another type comes back with the wrong sign, for
+// validateMovement to catch.
+export const toQuantityDelta = (type: MovementType, quantity: number): number =>
+  SIGNS[type] === 'negative' ? -quantity : quantity
+
 // Quantities have three decimals, so sums run on integer thousandths to avoid
 // float drift (0.1 + 0.2 must be 0.3).
 const SCALE = 1000

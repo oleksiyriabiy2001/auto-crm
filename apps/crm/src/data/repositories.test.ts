@@ -95,6 +95,22 @@ describe('DexieStockMovementRepository', () => {
   it('reports zero for a product with no movements', async () => {
     expect(await new DexieStockMovementRepository(db).getQuantity(PRODUCT)).toBe(0)
   })
+
+  it('tells whether a movement is in the ledger', async () => {
+    const movements = new DexieStockMovementRepository(db)
+    const sale = movement(-1)
+    await movements.add(sale)
+    expect(await movements.has(sale.id)).toBe(true)
+    expect(await movements.has(newId())).toBe(false)
+  })
+
+  it('lists every product\'s cached quantity', async () => {
+    const movements = new DexieStockMovementRepository(db)
+    const other = newId()
+    await movements.add(movement(3))
+    await movements.add({ ...movement(-0.5), productId: other })
+    expect(await movements.listQuantities()).toStrictEqual(new Map([[PRODUCT, 3], [other, -0.5]]))
+  })
 })
 
 describe('DexieProductBarcodeRepository', () => {
@@ -106,6 +122,7 @@ describe('DexieProductBarcodeRepository', () => {
     expect(await barcodes.findByBarcode('4820000000017')).toStrictEqual(live)
     expect(await barcodes.findByBarcode('0000')).toBeUndefined()
     expect(await barcodes.listByProduct(PRODUCT)).toHaveLength(2)
+    expect(await barcodes.list()).toHaveLength(2)
   })
 })
 

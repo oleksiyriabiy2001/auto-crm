@@ -67,6 +67,10 @@ export class DexieProductRepository implements ProductRepository {
 export class DexieProductBarcodeRepository implements ProductBarcodeRepository {
   constructor(private readonly db: LocalDatabase) {}
 
+  list(): Promise<ProductBarcode[]> {
+    return this.db.productBarcodes.toArray()
+  }
+
   findByBarcode(barcode: string): Promise<ProductBarcode | undefined> {
     return this.db.productBarcodes
       .where('barcode')
@@ -106,8 +110,17 @@ export class DexieStockMovementRepository implements StockMovementRepository {
     })
   }
 
+  async has(id: Id): Promise<boolean> {
+    return (await this.db.stockMovements.where('id').equals(id).count()) > 0
+  }
+
   async getQuantity(productId: Id): Promise<number> {
     return (await this.db.stockLevels.get(productId))?.quantity ?? 0
+  }
+
+  async listQuantities(): Promise<Map<Id, number>> {
+    const levels = await this.db.stockLevels.toArray()
+    return new Map(levels.map((level) => [level.productId, level.quantity]))
   }
 }
 

@@ -27,6 +27,7 @@ export interface ProductRepository {
 }
 
 export interface ProductBarcodeRepository {
+  list: () => Promise<ProductBarcode[]>
   // The live (not removed) barcode row, if any.
   findByBarcode: (barcode: string) => Promise<ProductBarcode | undefined>
   listByProduct: (productId: Id) => Promise<ProductBarcode[]>
@@ -39,8 +40,11 @@ export interface StockMovementRepository {
   // Ignores a movement whose id is already stored, so a pull that returns
   // the device's own movement never counts it twice.
   add: (movement: StockMovement) => Promise<void>
+  has: (id: Id) => Promise<boolean>
   // Current quantity from the incrementally updated local cache.
   getQuantity: (productId: Id) => Promise<number>
+  // Every product's cached quantity; a product with no movements is absent.
+  listQuantities: () => Promise<Map<Id, number>>
 }
 
 // pending: not confirmed by the server yet.

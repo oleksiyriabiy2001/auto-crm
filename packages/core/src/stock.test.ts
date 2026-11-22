@@ -1,6 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import type { MovementType } from './stock'
-import { isLowStock, isNegativeStock, sumStock, validateMovement } from './stock'
+import { isLowStock, isNegativeStock, sumStock, toQuantityDelta, validateMovement } from './stock'
+
+describe('toQuantityDelta', () => {
+  it.each<[MovementType, number, number]>([
+    ['receive', 5, 5],
+    ['initial', 2.5, 2.5],
+    ['sale', 2, -2],
+    ['consume', 0.25, -0.25],
+    ['write_off', 1, -1],
+    ['adjustment', -3, -3],
+    ['adjustment', 3, 3],
+  ])('turns %s of %d into %d', (type, quantity, delta) => {
+    expect(toQuantityDelta(type, quantity)).toBe(delta)
+  })
+
+  it('leaves a typed negative for validateMovement to reject', () => {
+    expect(validateMovement({ type: 'sale', quantityDelta: toQuantityDelta('sale', -2), note: null })).toBe('wrongSign')
+  })
+})
 
 describe('validateMovement', () => {
   it.each<[MovementType, number]>([
