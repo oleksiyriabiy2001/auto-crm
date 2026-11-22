@@ -1,6 +1,6 @@
 import type { Category, Product, ProductBarcode, StockMovement } from './entities'
 import type { Operation } from './operations'
-import type { Id } from './primitives'
+import type { Id, UtcTimestamp } from './primitives'
 import type { BootstrapResponse, Cursor, RejectReason } from './sync'
 
 // Local database interfaces. Implementations live in the app (Dexie), so
@@ -43,8 +43,13 @@ export interface StockMovementRepository {
   getQuantity: (productId: Id) => Promise<number>
 }
 
+// pending: not confirmed by the server yet.
+// accepted: confirmed, kept until the pull that brings its rows back, so the
+//   screen never shows the old value in between.
+// rejected: refused by the server; the "needs attention" list.
 export type OutboxEntry
   = | { operation: Operation, userId: Id, status: 'pending' }
+    | { operation: Operation, userId: Id, status: 'accepted' }
     | { operation: Operation, userId: Id, status: 'rejected', reason: RejectReason }
 
 export interface OutboxRepository {
@@ -53,7 +58,10 @@ export interface OutboxRepository {
   listPending: (userId: Id) => Promise<OutboxEntry[]>
   // The "needs attention" list.
   listRejected: (userId: Id) => Promise<OutboxEntry[]>
+  markAccepted: (operationIds: readonly Id[]) => Promise<void>
   markRejected: (operationId: Id, reason: RejectReason) => Promise<void>
+  // Called once a pull has brought the accepted operations' rows back.
+  removeAccepted: (userId: Id) => Promise<void>
   remove: (operationId: Id) => Promise<void>
 }
 
@@ -61,6 +69,9 @@ export interface OutboxRepository {
 export interface SyncStateRepository {
   getCursor: () => Promise<Cursor | null>
   setCursor: (cursor: Cursor) => Promise<void>
+  // When the last full sync finished, for the status indicator.
+  getLastSyncedAt: () => Promise<UtcTimestamp | null>
+  setLastSyncedAt: (at: UtcTimestamp) => Promise<void>
 }
 
 // Device-level storage, shared by every shop signed in on the device.

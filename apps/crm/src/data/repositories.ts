@@ -14,6 +14,7 @@ import type {
   StockMovementRepository,
   SyncStateRepository,
   TransactionRunner,
+  UtcTimestamp,
 } from '@auto-crm/core'
 import { sumStock } from '@auto-crm/core'
 
@@ -112,9 +113,9 @@ export class DexieStockMovementRepository implements StockMovementRepository {
 
 const toEntry = (row: OutboxRow): OutboxEntry => {
   const { operation, userId } = row
-  return row.status === 'pending'
-    ? { operation, userId, status: 'pending' }
-    : { operation, userId, status: 'rejected', reason: row.reason }
+  return row.status === 'rejected'
+    ? { operation, userId, status: 'rejected', reason: row.reason }
+    : { operation, userId, status: row.status }
 }
 
 export class DexieOutboxRepository implements OutboxRepository {
@@ -134,10 +135,20 @@ export class DexieOutboxRepository implements OutboxRepository {
     return (await this.db.outbox.where('[userId+status]').equals([userId, 'rejected']).toArray()).map(toEntry)
   }
 
+  async markAccepted(operationIds: readonly Id[]): Promise<void> {
+    await this.db.outbox.where('operationId').anyOf(operationIds).modify((row) => {
+      Object.assign(row, { status: 'accepted' })
+    })
+  }
+
   async markRejected(operationId: Id, reason: RejectReason): Promise<void> {
     await this.db.outbox.where('operationId').equals(operationId).modify((row) => {
       Object.assign(row, { status: 'rejected', reason })
     })
+  }
+
+  async removeAccepted(userId: Id): Promise<void> {
+    await this.db.outbox.where('[userId+status]').equals([userId, 'accepted']).delete()
   }
 
   async remove(operationId: Id): Promise<void> {
@@ -154,5 +165,13 @@ export class DexieSyncStateRepository implements SyncStateRepository {
 
   async setCursor(cursor: Cursor): Promise<void> {
     await this.db.syncState.put({ key: 'cursor', value: cursor })
+  }
+
+  async getLastSyncedAt(): Promise<UtcTimestamp | null> {
+    return (await this.db.syncState.get('lastSyncedAt'))?.value ?? null
+  }
+
+  async setLastSyncedAt(at: UtcTimestamp): Promise<void> {
+    await this.db.syncState.put({ key: 'lastSyncedAt', value: at })
   }
 }

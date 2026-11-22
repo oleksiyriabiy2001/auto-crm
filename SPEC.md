@@ -90,7 +90,7 @@ Every device keeps a full copy of its shop's catalog and records changes as oper
 2. Every write is saved locally at once and appended to an outbox as an operation with a client-generated UUID.
 3. When online, the sync engine pushes the outbox in order. The server applies each operation once, using the UUID to ignore repeats, and answers accepted or rejected per operation.
 4. The engine then pulls everything changed since its last cursor and merges it into the local database.
-5. The UI always reads the local database, so pending changes show immediately with a "not synced yet" mark.
+5. The UI always reads the local database, so pending changes show immediately with a "not synced yet" mark. Local tables hold only what the server sent; the screen shows them with the outbox replayed on top, so a change the server rejects, or the user discards, disappears without leaving a wrong value behind.
 
 ### Conflict rules
 

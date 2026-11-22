@@ -9,6 +9,9 @@ export const useSessionStore = defineStore('session', () => {
   const session = ref<AuthSession | null>(null)
   const isSignedIn = computed(() => session.value !== null)
 
+  // TODO(phase 2, step 4): start syncService (src/sync/sync.service.ts) after
+  // restore and signIn, and stop it on signOut. Until then nothing syncs.
+
   // Loads the cached session on start-up, before the first navigation.
   const restore = async (): Promise<void> => {
     try {
