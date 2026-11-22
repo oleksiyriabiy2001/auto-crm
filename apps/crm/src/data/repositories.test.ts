@@ -184,6 +184,23 @@ describe('DexieOutboxRepository', () => {
     ])
   })
 
+  it('puts a rejected entry back in the queue in its original place, without the reason', async () => {
+    const outbox = new DexieOutboxRepository(db)
+    const [rejected, later] = [deleteOperation(), deleteOperation()]
+    await outbox.add({ operation: rejected, userId: USER, status: 'pending' })
+    await outbox.add({ operation: later, userId: USER, status: 'pending' })
+    await outbox.markRejected(rejected.id, 'barcodeConflict')
+
+    await outbox.markPending(rejected.id)
+
+    expect(await outbox.listRejected(USER)).toStrictEqual([])
+    expect(await outbox.listPending(USER)).toStrictEqual([
+      { operation: rejected, userId: USER, status: 'pending' },
+      { operation: later, userId: USER, status: 'pending' },
+    ])
+    expect(await db.outbox.get({ operationId: rejected.id })).not.toHaveProperty('reason')
+  })
+
   it('refuses the same operation twice', async () => {
     const outbox = new DexieOutboxRepository(db)
     const operation = deleteOperation()

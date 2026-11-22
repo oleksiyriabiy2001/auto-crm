@@ -67,6 +67,10 @@ export interface OutboxRepository {
   listRejected: (userId: Id) => Promise<OutboxEntry[]>
   markAccepted: (operationIds: readonly Id[]) => Promise<void>
   markRejected: (operationId: Id, reason: RejectReason) => Promise<void>
+  // Retry from "needs attention": back in the queue under the same id. The
+  // server records an id only once applied, so a rejected one is not a duplicate.
+  // It keeps its original place, so it goes out before later changes.
+  markPending: (operationId: Id) => Promise<void>
   // Called once a pull has brought the accepted operations' rows back.
   removeAccepted: (userId: Id) => Promise<void>
   remove: (operationId: Id) => Promise<void>

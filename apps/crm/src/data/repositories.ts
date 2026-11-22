@@ -170,6 +170,13 @@ export class DexieOutboxRepository implements OutboxRepository {
     })
   }
 
+  async markPending(operationId: Id): Promise<void> {
+    await this.db.outbox.where('operationId').equals(operationId).modify((row) => {
+      Object.assign(row, { status: 'pending' })
+      Reflect.deleteProperty(row, 'reason')
+    })
+  }
+
   async removeAccepted(userId: Id): Promise<void> {
     await this.db.outbox.where('[userId+status]').equals([userId, 'accepted']).delete()
   }

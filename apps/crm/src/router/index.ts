@@ -2,6 +2,7 @@ import type { Capability } from '@auto-crm/core'
 import { can } from '@auto-crm/core'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { attentionRoutes } from '@/features/attention/attention.routes'
 import { authRoutes } from '@/features/auth/auth.routes'
 import { categoriesRoutes } from '@/features/categories/categories.routes'
 import { productsRoutes } from '@/features/products/products.routes'
@@ -31,6 +32,7 @@ const router = createRouter({
         { path: '', redirect: { name: 'products' } },
         ...productsRoutes,
         ...categoriesRoutes,
+        ...attentionRoutes,
       ],
     },
     ...authRoutes,

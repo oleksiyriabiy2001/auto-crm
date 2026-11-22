@@ -40,6 +40,10 @@ export class ShopAccess {
     return this.deps.now()
   }
 
+  requestSync(): void {
+    this.deps.requestSync()
+  }
+
   // Validates input at the service boundary. Text comes back trimmed.
   parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
     const result = schema.safeParse(input)

@@ -5,6 +5,7 @@ import { FakeGateway } from '@/sync/fake-gateway'
 import { SyncEngine } from '@/sync/sync-engine'
 
 import { CategoryService } from './category.service'
+import { OutboxService } from './outbox.service'
 import { ProductService } from './product.service'
 import { StockService } from './stock.service'
 import type { TestShop } from './test-shop'
@@ -167,6 +168,28 @@ describe('services through a sync', () => {
     expect(await shop.context.repositories.outbox.listRejected(TEST_USER)).toStrictEqual([
       expect.objectContaining({ reason: 'barcodeConflict', operation: expect.objectContaining({ payload: expect.objectContaining({ id: barcode }) }) }),
     ])
+  })
+
+  it('accept a refused change once it is retried', async () => {
+    const outbox = new OutboxService(shop.access)
+    const filter = await products.create({ ...fields, barcodes: [] })
+    await engine.syncNow()
+    await products.addBarcode(filter, { barcode: '4820000000017', symbology: null })
+    // Refused once, e.g. while another product still had the barcode.
+    let refusals = 1
+    gateway.decide = (operation) => (operation.type === 'barcode.add' && refusals-- > 0
+      ? { operationId: operation.id, status: 'rejected', reason: 'barcodeConflict' }
+      : undefined)
+    await engine.syncNow()
+    const [item] = await outbox.listRejected()
+    expect(item).toMatchObject({ reason: 'barcodeConflict', barcode: '4820000000017' })
+
+    await outbox.retry(item?.operation.id ?? '')
+    await engine.syncNow()
+
+    expect(await outbox.listRejected()).toStrictEqual([])
+    expect(await shop.outbox()).toStrictEqual([])
+    expect((await products.findByBarcode('4820000000017'))).toMatchObject({ id: filter, pending: false })
   })
 
   it('show nothing of an edit whose row the server never had', async () => {

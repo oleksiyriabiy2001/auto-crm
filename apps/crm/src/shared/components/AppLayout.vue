@@ -51,6 +51,20 @@ const signOut = async () => {
           >
             {{ t('layout.nav.categories') }}
           </RouterLink>
+          <RouterLink
+            :to="{ name: 'attention' }"
+            class="
+              flex items-center gap-1.5 text-gray-700
+              hover:text-gray-900
+            "
+            active-class="font-medium text-blue-700"
+          >
+            {{ t('layout.nav.attention') }}
+            <span
+              v-if="sync.status.rejectedCount > 0"
+              class="rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white"
+            >{{ sync.status.rejectedCount }}</span>
+          </RouterLink>
         </nav>
         <SyncStatusIndicator class="ml-auto" />
         <div class="flex items-center gap-3 text-sm">

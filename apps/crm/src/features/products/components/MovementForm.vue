@@ -4,7 +4,7 @@ import { movementCapability, MovementTypeSchema, sumStock, toQuantityDelta } fro
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useMovementTypeLabel } from '../composables/useMovementTypeLabel'
+import { useMovementTypeLabel } from '@/shared/composables/useMovementTypeLabel'
 import { useUnitLabel } from '../composables/useUnitLabel'
 import { invalidFields, MovementFormSchema } from '../products.schema'
 import { useCan } from '@/shared/composables/useCan'

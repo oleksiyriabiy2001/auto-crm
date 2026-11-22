@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
 import MovementForm from './components/MovementForm.vue'
-import { useMovementTypeLabel } from './composables/useMovementTypeLabel'
+import { useMovementTypeLabel } from '@/shared/composables/useMovementTypeLabel'
 import { useUnitLabel } from './composables/useUnitLabel'
 import { BarcodeTextSchema } from './products.schema'
 import PendingBadge from '@/shared/components/PendingBadge.vue'
