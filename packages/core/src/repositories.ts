@@ -56,6 +56,9 @@ export interface OutboxRepository {
   add: (entry: OutboxEntry) => Promise<void>
   // In the order they were added: the sync engine pushes them in this order.
   listPending: (userId: Id) => Promise<OutboxEntry[]>
+  // Pending and accepted, in the order they were added: what the screen
+  // replays on top of the server's rows.
+  listUnconfirmed: (userId: Id) => Promise<OutboxEntry[]>
   // The "needs attention" list.
   listRejected: (userId: Id) => Promise<OutboxEntry[]>
   markAccepted: (operationIds: readonly Id[]) => Promise<void>

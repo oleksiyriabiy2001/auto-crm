@@ -131,6 +131,16 @@ export class DexieOutboxRepository implements OutboxRepository {
     return (await this.db.outbox.where('[userId+status]').equals([userId, 'pending']).toArray()).map(toEntry)
   }
 
+  // Two index keys come back grouped by key, so sort by `seq` to restore the
+  // order they were added.
+  async listUnconfirmed(userId: Id): Promise<OutboxEntry[]> {
+    const rows = await this.db.outbox
+      .where('[userId+status]')
+      .anyOf([[userId, 'pending'], [userId, 'accepted']])
+      .sortBy('seq')
+    return rows.map(toEntry)
+  }
+
   async listRejected(userId: Id): Promise<OutboxEntry[]> {
     return (await this.db.outbox.where('[userId+status]').equals([userId, 'rejected']).toArray()).map(toEntry)
   }

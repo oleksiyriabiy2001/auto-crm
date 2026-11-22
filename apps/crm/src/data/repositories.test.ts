@@ -152,6 +152,21 @@ describe('DexieOutboxRepository', () => {
     expect((await db.outbox.get({ operationId: theirs.id }))?.status).toBe('accepted')
   })
 
+  it('lists one user\'s pending and accepted entries in the order they were added', async () => {
+    const outbox = new DexieOutboxRepository(db)
+    const [first, accepted, rejected, last, theirs] = [deleteOperation(), deleteOperation(), deleteOperation(), deleteOperation(), deleteOperation()]
+    for (const operation of [first, accepted, rejected, last]) await outbox.add({ operation, userId: USER, status: 'pending' })
+    await outbox.add({ operation: theirs, userId: OTHER_USER, status: 'pending' })
+    await outbox.markAccepted([accepted.id])
+    await outbox.markRejected(rejected.id, 'notFound')
+
+    expect(await outbox.listUnconfirmed(USER)).toStrictEqual([
+      { operation: first, userId: USER, status: 'pending' },
+      { operation: accepted, userId: USER, status: 'accepted' },
+      { operation: last, userId: USER, status: 'pending' },
+    ])
+  })
+
   it('refuses the same operation twice', async () => {
     const outbox = new DexieOutboxRepository(db)
     const operation = deleteOperation()
