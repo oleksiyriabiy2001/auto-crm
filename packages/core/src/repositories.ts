@@ -1,7 +1,7 @@
 import type { Category, Product, ProductBarcode, StockMovement } from './entities'
 import type { Operation } from './operations'
 import type { Id } from './primitives'
-import type { Cursor, RejectReason } from './sync'
+import type { BootstrapResponse, Cursor, RejectReason } from './sync'
 
 // Local database interfaces. Implementations live in the app (Dexie), so
 // services never touch storage or the network directly. Rows are stored as
@@ -61,4 +61,13 @@ export interface OutboxRepository {
 export interface SyncStateRepository {
   getCursor: () => Promise<Cursor | null>
   setCursor: (cursor: Cursor) => Promise<void>
+}
+
+// Device-level storage, shared by every shop signed in on the device.
+export interface DeviceRepository {
+  // Generated on first use, then the same forever. Sent on every operation.
+  getDeviceId: () => Promise<Id>
+  // The last bootstrap per user, so an offline start knows the shop and role.
+  saveBootstrap: (userId: Id, bootstrap: BootstrapResponse) => Promise<void>
+  getBootstrap: (userId: Id) => Promise<BootstrapResponse | undefined>
 }
