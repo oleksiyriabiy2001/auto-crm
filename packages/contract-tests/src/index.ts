@@ -24,6 +24,10 @@ export interface ContractShop {
 export interface ContractHarness {
   // Provisions two new, empty shops, each with an active admin and staff.
   createShops: () => Promise<{ shopA: ContractShop, shopB: ContractShop }>
+  // A gateway whose backend cannot be reached, as when the device is offline.
+  createUnreachableGateway: () => RemoteGateway
+  // Sets the shop's status to suspended, the platform owner's switch.
+  suspendShop: (tenantId: string) => Promise<void>
 }
 
 const DEVICE_ID = '0190a5d0-0000-7000-8000-000000000001'
@@ -159,9 +163,26 @@ export const describeGatewayContract = (harness: ContractHarness): void => {
         const { gateway, email, password } = shopB.staff
         await gateway.auth.signOut()
         expect(await gateway.auth.getSession()).toBeNull()
-        await expect(gateway.pullChanges({ cursor: null })).rejects.toThrow()
+        await expect(gateway.pullChanges({ cursor: null })).rejects.toMatchObject({ code: 'sessionExpired' })
+        await expect(gateway.pushOperations({ operations: [createProduct(newId(), 'Signed out')] }))
+          .rejects.toMatchObject({ code: 'sessionExpired' })
         await gateway.auth.signIn(email, password)
         expect((await gateway.auth.getSession())?.userId).toBe(shopB.staff.userId)
+      })
+    })
+
+    describe('errors', () => {
+      it('reports an unreachable backend as a network error', async () => {
+        await expect(harness.createUnreachableGateway().pullChanges({ cursor: null }))
+          .rejects.toMatchObject({ name: 'GatewayError', code: 'network' })
+      })
+
+      it('reports a suspended shop as access denied', async () => {
+        const { shopA: suspended } = await harness.createShops()
+        await suspended.staff.gateway.auth.signIn(suspended.staff.email, suspended.staff.password)
+        await harness.suspendShop(suspended.tenantId)
+        await expect(suspended.staff.gateway.pullChanges({ cursor: null }))
+          .rejects.toMatchObject({ name: 'GatewayError', code: 'accessDenied' })
       })
     })
 

@@ -51,6 +51,11 @@ const createShop = async (name: string): Promise<ContractShop> => {
 
 const harness: ContractHarness = {
   createShops: async () => ({ shopA: await createShop('Shop A'), shopB: await createShop('Shop B') }),
+  // Port 9 (discard) has nothing listening locally, so the connection is refused.
+  createUnreachableGateway: () => createSupabaseGateway({ url: 'http://127.0.0.1:9', publishableKey, persistSession: false }),
+  suspendShop: async (tenantId) => {
+    await must(admin.from('tenants').update({ status: 'suspended' }).eq('id', tenantId))
+  },
 }
 
 describeGatewayContract(harness)
