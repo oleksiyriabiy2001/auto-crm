@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 
 import SyncStatusIndicator from '@/shared/components/SyncStatusIndicator.vue'
+import { useCan } from '@/shared/composables/useCan'
 import { useSessionStore } from '@/shared/stores/session.store'
 import { useSyncStore } from '@/shared/stores/sync.store'
 
@@ -12,6 +13,7 @@ const { t } = useI18n()
 const router = useRouter()
 const session = useSessionStore()
 const sync = useSyncStore()
+const can = useCan()
 
 const signOut = async () => {
   try {
@@ -37,6 +39,17 @@ const signOut = async () => {
             active-class="font-medium text-blue-700"
           >
             {{ t('layout.nav.products') }}
+          </RouterLink>
+          <RouterLink
+            v-if="can('manageCategories')"
+            :to="{ name: 'categories' }"
+            class="
+              text-gray-700
+              hover:text-gray-900
+            "
+            active-class="font-medium text-blue-700"
+          >
+            {{ t('layout.nav.categories') }}
           </RouterLink>
         </nav>
         <SyncStatusIndicator class="ml-auto" />

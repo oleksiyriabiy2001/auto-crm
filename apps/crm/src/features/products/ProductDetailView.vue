@@ -7,7 +7,6 @@ import { RouterLink, useRoute } from 'vue-router'
 import MovementForm from './components/MovementForm.vue'
 import { useMovementTypeLabel } from './composables/useMovementTypeLabel'
 import { useUnitLabel } from './composables/useUnitLabel'
-import { categoryOptions } from './product-filter'
 import { BarcodeTextSchema } from './products.schema'
 import PendingBadge from '@/shared/components/PendingBadge.vue'
 import { useCan } from '@/shared/composables/useCan'
@@ -37,7 +36,7 @@ const isDeleted = computed(() => (product.value?.deletedAt ?? null) !== null)
 const categoryLabel = computed(() => {
   const categoryId = product.value?.categoryId
   if (!categoryId) return null
-  return categoryOptions(categories.data.value ?? []).find((option) => option.id === categoryId)?.label ?? t('products.detail.deletedCategory')
+  return categories.data.value?.find((category) => category.id === categoryId)?.path.join(' / ') ?? t('products.detail.deletedCategory')
 })
 const showCost = computed(() => can('viewReports'))
 

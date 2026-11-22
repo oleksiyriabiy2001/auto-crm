@@ -8,7 +8,34 @@ import { shopAccess } from './shop-access'
 
 export type CategoryInput = z.input<typeof CategoryFieldsSchema>
 
-const byName = (a: Category, b: Category): number => a.name.localeCompare(b.name, 'uk')
+// A category as the screens show it: unsynced changes applied, with the names
+// from the top of the tree down to it, e.g. ["Оливи", "Моторні"].
+export type CategoryView = Overlaid<Category> & { path: string[] }
+
+// Tree order: a category comes right before its subcategories.
+const byPath = (a: CategoryView, b: CategoryView): number => {
+  for (let i = 0; i < Math.min(a.path.length, b.path.length); i++) {
+    const order = (a.path[i] ?? '').localeCompare(b.path[i] ?? '', 'uk')
+    if (order !== 0) return order
+  }
+  return a.path.length - b.path.length
+}
+
+// Paths run through deleted parents too, so a category keeps its place in the
+// tree while its parent is deleted.
+const withPaths = (categories: readonly Overlaid<Category>[]): CategoryView[] => {
+  const byId = new Map(categories.map((category) => [category.id, category]))
+  return categories.map((category) => {
+    const path = [category.name]
+    let parent = category.parentId === null ? undefined : byId.get(category.parentId)
+    // Capped so a broken tree cannot loop.
+    for (let steps = 0; parent && steps < categories.length; steps++) {
+      path.unshift(parent.name)
+      parent = parent.parentId === null ? undefined : byId.get(parent.parentId)
+    }
+    return { ...category, path }
+  })
+}
 
 const find = (catalog: OverlaidCatalog, id: Id): Overlaid<Category> => {
   const category = catalog.categories.find((row) => row.id === id)
@@ -26,14 +53,14 @@ const checkParent = (catalog: OverlaidCatalog, parentId: Id | null): void => {
 export class CategoryService {
   constructor(private readonly shop: ShopAccess) {}
 
-  // Live categories, by name.
-  async list(): Promise<Overlaid<Category>[]> {
-    return (await this.all()).filter((row) => row.deletedAt === null).sort(byName)
+  // Live categories, in tree order.
+  async list(): Promise<CategoryView[]> {
+    return (await this.all()).filter((row) => row.deletedAt === null).sort(byPath)
   }
 
-  // Deleted categories an admin can restore, by name.
-  async listDeleted(): Promise<Overlaid<Category>[]> {
-    return (await this.all()).filter((row) => row.deletedAt !== null).sort(byName)
+  // Deleted categories an admin can restore, in tree order.
+  async listDeleted(): Promise<CategoryView[]> {
+    return (await this.all()).filter((row) => row.deletedAt !== null).sort(byPath)
   }
 
   // Returns the new category's id.
@@ -84,9 +111,9 @@ export class CategoryService {
     })
   }
 
-  private async all(): Promise<Overlaid<Category>[]> {
+  private async all(): Promise<CategoryView[]> {
     const context = this.shop.context()
-    return (await this.shop.catalog(context, await this.shop.unconfirmed(context))).categories
+    return withPaths((await this.shop.catalog(context, await this.shop.unconfirmed(context))).categories)
   }
 }
 

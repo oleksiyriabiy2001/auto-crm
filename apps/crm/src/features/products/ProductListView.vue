@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 
 import { useUnitLabel } from './composables/useUnitLabel'
 import type { ProductSortKey } from './product-filter'
-import { categoryOptions, filterProducts } from './product-filter'
+import { filterProducts } from './product-filter'
 import { useProductsStore } from './products.store'
 import PendingBadge from '@/shared/components/PendingBadge.vue'
 import { useCan } from '@/shared/composables/useCan'
@@ -32,7 +32,7 @@ const categories = useLiveQuery(() => categoryService.list())
 const canRestore = computed(() => can('deleteProduct'))
 const showingDeleted = computed(() => store.showDeleted && canRestore.value)
 const source = computed(() => (showingDeleted.value ? deleted : live))
-const options = computed(() => categoryOptions(categories.data.value ?? []))
+const options = computed(() => (categories.data.value ?? []).map((category) => ({ id: category.id, label: category.path.join(' / ') })))
 const rows = computed(() => filterProducts(source.value.data.value ?? [], store.filter, categories.data.value ?? []))
 const loadError = computed(() => (source.value.error.value ? serviceErrorMessage(source.value.error.value) : null))
 const actionError = ref<string | null>(null)

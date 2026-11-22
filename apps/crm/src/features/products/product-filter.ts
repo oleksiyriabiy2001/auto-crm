@@ -1,4 +1,4 @@
-import type { Category, CategoryNode, Id } from '@auto-crm/core'
+import type { CategoryNode, Id } from '@auto-crm/core'
 
 import type { ProductView } from '@/shared/services/product.service'
 
@@ -78,28 +78,4 @@ export const filterProducts = (
     .filter((product) => !filter.lowStockOnly || product.isLowStock || product.isNegativeStock)
     .sort((a, b) => compare(sortValue(a, filter.sortBy), sortValue(b, filter.sortBy), filter.descending)
       || a.name.localeCompare(b.name, LOCALE))
-}
-
-export interface CategoryOption {
-  id: Id
-  label: string // the path from the top, e.g. "Оливи / Моторні"
-}
-
-// Categories for a picker, each labelled with its full path and sorted by it,
-// so subcategories sit under their parent.
-export const categoryOptions = (categories: readonly Pick<Category, 'id' | 'name' | 'parentId'>[]): CategoryOption[] => {
-  const byId = new Map(categories.map((category) => [category.id, category]))
-  const path = (category: Pick<Category, 'name' | 'parentId'>): string => {
-    const names = [category.name]
-    let parent = category.parentId === null ? undefined : byId.get(category.parentId)
-    // Capped so a broken tree cannot loop.
-    for (let steps = 0; parent && steps < categories.length; steps++) {
-      names.unshift(parent.name)
-      parent = parent.parentId === null ? undefined : byId.get(parent.parentId)
-    }
-    return names.join(' / ')
-  }
-  return categories
-    .map((category) => ({ id: category.id, label: path(category) }))
-    .sort((a, b) => a.label.localeCompare(b.label, LOCALE))
 }

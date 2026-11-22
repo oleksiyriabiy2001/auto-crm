@@ -3,6 +3,7 @@ import { can } from '@auto-crm/core'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { authRoutes } from '@/features/auth/auth.routes'
+import { categoriesRoutes } from '@/features/categories/categories.routes'
 import { productsRoutes } from '@/features/products/products.routes'
 import AppLayout from '@/shared/components/AppLayout.vue'
 import { useSessionStore } from '@/shared/stores/session.store'
@@ -29,6 +30,7 @@ const router = createRouter({
       children: [
         { path: '', redirect: { name: 'products' } },
         ...productsRoutes,
+        ...categoriesRoutes,
       ],
     },
     ...authRoutes,

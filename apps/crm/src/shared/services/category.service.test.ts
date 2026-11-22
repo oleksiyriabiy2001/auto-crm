@@ -52,11 +52,22 @@ describe('CategoryService', () => {
     expect(shop.syncRequests()).toBe(1)
     expect((await service.list()).map((row) => [row.name, row.pending])).toStrictEqual([
       ['Гальма', true],
-      ['Моторні', false],
       ['Оливи', false],
+      ['Моторні', false],
       ['Синтетика', false],
       ['Фільтри', false],
     ])
+  })
+
+  it('lists in tree order with each category\'s path, through deleted parents too', async () => {
+    expect((await service.list()).map((row) => row.path)).toStrictEqual([
+      ['Оливи'],
+      ['Оливи', 'Моторні'],
+      ['Оливи', 'Моторні', 'Синтетика'],
+      ['Фільтри'],
+    ])
+    await service.delete(MOTOR)
+    expect((await service.list()).find((row) => row.id === SYNTHETIC)?.path).toStrictEqual(['Оливи', 'Моторні', 'Синтетика'])
   })
 
   it('lists deleted categories apart from live ones', async () => {

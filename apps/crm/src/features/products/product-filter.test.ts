@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ProductView } from '@/shared/services/product.service'
 
 import type { ProductFilter } from './product-filter'
-import { categoryOptions, DEFAULT_PRODUCT_FILTER, filterProducts } from './product-filter'
+import { DEFAULT_PRODUCT_FILTER, filterProducts } from './product-filter'
 
 const view = (name: string, fields: Partial<ProductView> = {}): ProductView => ({
   id: name,
@@ -84,21 +84,5 @@ describe('filterProducts', () => {
 
   it('combines search, category and low stock', () => {
     expect(names({ search: 'о', categoryId: 'oils', lowStockOnly: true })).toStrictEqual(['Олива 5W-30'])
-  })
-})
-
-describe('categoryOptions', () => {
-  it('labels each category with its path and sorts by it', () => {
-    expect(categoryOptions([
-      { id: 'filters', name: 'Фільтри', parentId: null },
-      { id: 'motor', name: 'Моторні', parentId: 'oils' },
-      { id: 'oils', name: 'Оливи', parentId: null },
-      { id: 'orphan', name: 'Сирота', parentId: 'deleted' },
-    ])).toStrictEqual([
-      { id: 'oils', label: 'Оливи' },
-      { id: 'motor', label: 'Оливи / Моторні' },
-      { id: 'orphan', label: 'Сирота' },
-      { id: 'filters', label: 'Фільтри' },
-    ])
   })
 })
