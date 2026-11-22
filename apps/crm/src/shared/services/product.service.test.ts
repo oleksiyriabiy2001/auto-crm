@@ -68,6 +68,15 @@ describe('ProductService reads', () => {
     expect((await service.listDeleted()).map((row) => row.id)).toStrictEqual([OLD])
   })
 
+  it('gives each product its live barcodes, unsynced ones included', async () => {
+    await service.addBarcode(FILTER, { barcode: '4820000000048', symbology: null })
+    const views = await service.list()
+    expect(views.find((row) => row.id === FILTER)?.barcodes).toStrictEqual(['4820000000017', '4820000000048'])
+    // The plug's only barcode was removed.
+    expect(views.find((row) => row.id === PLUG)?.barcodes).toStrictEqual([])
+    expect((await service.get(FILTER))?.product.barcodes).toStrictEqual(['4820000000017', '4820000000048'])
+  })
+
   it('counts unsynced movements in the quantity and flags negative stock', async () => {
     await shop.context.repositories.outbox.add({
       userId: shop.context.userId,

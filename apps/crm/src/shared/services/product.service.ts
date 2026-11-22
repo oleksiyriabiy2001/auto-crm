@@ -15,6 +15,7 @@ export type BarcodeInput = z.input<typeof BarcodeFieldsSchema>
 // Quantity includes the user's movements not confirmed yet. Negative stock is
 // flagged, never refused.
 export type ProductView = Overlaid<Product> & {
+  barcodes: string[] // live codes, for search
   quantity: number
   isLowStock: boolean
   isNegativeStock: boolean
@@ -85,9 +86,10 @@ export class ProductService {
     const stored = await context.repositories.movements.listByProduct(id)
     const movements = [...stored.map((row) => ({ ...row, pending: false })), ...pending]
       .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    const barcodes = catalog.barcodes.filter((row) => row.productId === id && row.deletedAt === null)
     return {
-      product: this.toView(product, sumStock(movements)),
-      barcodes: catalog.barcodes.filter((row) => row.productId === id && row.deletedAt === null),
+      product: this.toView(product, sumStock(movements), barcodes.map((row) => row.barcode)),
+      barcodes,
       movements,
     }
   }
@@ -181,18 +183,23 @@ export class ProductService {
       context.repositories.movements.listQuantities(),
       this.shop.pendingMovements(context, operations),
     ])
+    const codes = new Map<Id, string[]>()
+    for (const row of catalog.barcodes) {
+      if (row.deletedAt === null) codes.set(row.productId, [...codes.get(row.productId) ?? [], row.barcode])
+    }
     const views = catalog.products
       .map((product) => this.toView(product, sumStock([
         { quantityDelta: quantities.get(product.id) ?? 0 },
         ...pending.filter((row) => row.productId === product.id),
-      ])))
+      ]), codes.get(product.id) ?? []))
       .sort(byName)
     return { catalog, views }
   }
 
-  private toView(product: Overlaid<Product>, quantity: number): ProductView {
+  private toView(product: Overlaid<Product>, quantity: number, barcodes: string[]): ProductView {
     return {
       ...product,
+      barcodes,
       quantity,
       isLowStock: isLowStock(quantity, product.minStock),
       isNegativeStock: isNegativeStock(quantity),
