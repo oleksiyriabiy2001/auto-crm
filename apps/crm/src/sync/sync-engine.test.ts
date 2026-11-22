@@ -1,4 +1,4 @@
-import type { Operation, StockMovement } from '@auto-crm/core'
+import type { Operation, Product, StockMovement } from '@auto-crm/core'
 import { GatewayError } from '@auto-crm/core'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -64,6 +64,27 @@ const remoteMovement = (quantityDelta: number): StockMovement => ({
   sourceId: null,
 })
 
+// The server refuses a movement for a product it does not have.
+const remoteProduct: Product = {
+  id: PRODUCT,
+  tenantId: FAKE_TENANT,
+  createdAt: '2026-11-22T10:00:00.000Z',
+  updatedAt: '2026-11-22T10:00:00.000Z',
+  deletedAt: null,
+  version: 1,
+  sku: null,
+  name: 'Фільтр масляний',
+  description: null,
+  categoryId: null,
+  unit: 'pcs',
+  costPriceMinor: null,
+  salePriceMinor: 25_000,
+  currency: 'UAH',
+  minStock: null,
+  locationNote: null,
+  isActive: true,
+}
+
 // Timers the test fires by hand: Vitest's fake timers would also freeze
 // the in-memory IndexedDB.
 class ManualTimers {
@@ -124,6 +145,10 @@ afterEach(() => {
 })
 
 describe('push', () => {
+  beforeEach(() => {
+    gateway.addRow(remoteProduct)
+  })
+
   it('sends this user\'s changes in order, in batches, and never another user\'s', async () => {
     const [first, second, third] = [sale(), sale(), sale()]
     await queue(first)
@@ -258,6 +283,7 @@ describe('pull', () => {
   })
 
   it('counts the device\'s own movement once when it comes back', async () => {
+    gateway.addRow(remoteProduct)
     await queue(sale(-1))
     gateway.addRow(remoteMovement(5))
 
