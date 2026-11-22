@@ -15,7 +15,7 @@ pnpm workspace:
 - `packages/contract-tests`: the shared suite every adapter must pass.
 - `supabase/`: local Supabase project (SQL migrations, pgTAP tests, seed).
 
-Playwright, Dexie and vite-plugin-pwa are planned but not installed. When you add tooling, update the relevant CLAUDE.md.
+Playwright and vite-plugin-pwa are planned but not installed. When you add tooling, update the relevant CLAUDE.md.
 
 ## Commands
 

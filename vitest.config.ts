@@ -13,6 +13,14 @@ export default defineConfig({
           environment: 'node',
         },
       },
+      {
+        test: {
+          name: 'crm',
+          root: 'apps/crm',
+          include: ['src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
     ],
   },
 })

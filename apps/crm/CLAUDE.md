@@ -4,7 +4,7 @@
 - `src/gateway.ts` is the composition root and the only place that picks the backend. Only services and the sync engine import it.
 - Supabase URL and publishable key come from `VITE_SUPABASE_*` env vars (`.env.development` holds local defaults).
 - Routes need a session unless `meta.public` is set.
-- No Vitest project yet: verify app code with `pnpm type-check` and by running the app.
+- Vitest project `crm` (`pnpm test --project crm`) runs `src/**/*.test.ts` in Node. Tests of `src/data/` pass an in-memory IndexedDB from `fake-indexeddb` to `LocalDatabase`, a fresh `IDBFactory` per test. UI code is still verified with `pnpm type-check` and by running the app.
 
 ## UI
 
@@ -27,7 +27,7 @@ src/
     components/               PascalCase .vue
     composables/              use<Name>.ts
   shared/                     used by several features: services/ stores/ components/ composables/
-  data/                       (phase 2) repositories and the local database
+  data/                       Dexie: LocalDatabase (one per shop) and the core repository interfaces
   sync/                       (phase 2) the sync engine
   router/index.ts             combines feature routes, guards sign-in
   gateway.ts                  picks the backend
@@ -44,4 +44,5 @@ src/
   }
   export const authService = new AuthService(gateway)
   ```
+- **Local database:** only services and the sync engine use `src/data/`. Inside `DexieTransactionRunner.run`, await only repository calls: a network call or timer inside an IndexedDB transaction lets it commit early. IndexedDB can't index booleans or null, so filter `deletedAt` and `isActive` in code. A schema change is a new `this.version(n)` in `LocalDatabase`; never edit a shipped version.
 - **Stores** use the setup-function form of `defineStore`, export `use<Name>Store`, and call services, never the gateway.
