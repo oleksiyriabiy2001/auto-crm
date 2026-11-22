@@ -37,11 +37,30 @@ const toGatewayError = (error: unknown): GatewayError => {
   return new GatewayError(code ?? 'unknown', { cause: error })
 }
 
+// How PostgREST reports a failed call. The returned `error` is plain JSON, not
+// an Error instance, so the HTTP status decides:
+// - 0: no response at all (offline, DNS, refused). postgrest-js catches the
+//   fetch error and resolves with status 0.
+// - 401: no valid user token. An expired or invalid JWT (PGRST30x), or no
+//   token at all, which runs the call as `anon`, which has no grant (42501).
+// - 403 with 42501: signed in, but the SQL function refused: no active
+//   membership or a suspended shop.
+const toRpcErrorCode = (status: number, code: string | undefined): GatewayErrorCode => {
+  if (status === 0) return 'network'
+  // TODO(phase 2, step 6): when the token refresh fails on a server error,
+  // supabase-js sends the call with the publishable key, so a user whose
+  // session is still stored gets 401 and the engine asks them to sign in
+  // again. Check auth.getSession() before treating 401 as an expired session.
+  if (status === 401) return 'sessionExpired'
+  if (status === 403 && code === '42501') return 'accessDenied'
+  return 'unknown'
+}
+
 // The three SQL functions return the contract's JSON as is; parsing here makes
 // sure the app only ever sees data that matches the zod schemas in core.
 const callRpc = async (client: SupabaseClient, name: string, args?: Record<string, unknown>): Promise<unknown> => {
-  const { data, error } = await client.rpc(name, args)
-  if (error) throw error
+  const { data, error, status } = await client.rpc(name, args)
+  if (error) throw new GatewayError(toRpcErrorCode(status, error.code), { cause: error })
   return data
 }
 

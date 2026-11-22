@@ -27,8 +27,8 @@ src/
     components/               PascalCase .vue
     composables/              use<Name>.ts
   shared/                     used by several features: services/ stores/ components/ composables/
-  data/                       Dexie: LocalDatabase (one per shop) and the core repository interfaces
-  sync/                       (phase 2) the sync engine
+  data/                       Dexie: LocalDatabase (one per shop), DeviceDatabase, the core repository interfaces
+  sync/                       SyncEngine (push, pull, backoff) and SyncService (starts it for a session)
   router/index.ts             combines feature routes, guards sign-in
   gateway.ts                  picks the backend
 ```
@@ -44,5 +44,6 @@ src/
   }
   export const authService = new AuthService(gateway)
   ```
+- **Sync:** only `src/sync/` calls `push`, `pull` and `bootstrap`. Local tables hold server data only, written by pull; screens show them with the user's `pending` and `accepted` outbox operations replayed on top, so a rejected or discarded change simply disappears. Services add to the outbox and then call `syncService.requestSync()`. Sync tests use `FakeGateway` (`src/sync/fake-gateway.ts`) and pass manual timers, because Vitest's fake timers also freeze the in-memory IndexedDB.
 - **Local database:** only services and the sync engine use `src/data/`. Inside `DexieTransactionRunner.run`, await only repository calls: a network call or timer inside an IndexedDB transaction lets it commit early. IndexedDB can't index booleans or null, so filter `deletedAt` and `isActive` in code. A schema change is a new `this.version(n)` in `LocalDatabase`; never edit a shipped version.
 - **Stores** use the setup-function form of `defineStore`, export `use<Name>Store`, and call services, never the gateway.

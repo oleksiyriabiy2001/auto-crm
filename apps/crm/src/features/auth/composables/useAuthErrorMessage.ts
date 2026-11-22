@@ -16,6 +16,10 @@ export const useAuthErrorMessage = () => {
         return t('auth.errors.samePassword')
       case 'network':
         return t('auth.errors.network')
+      case 'sessionExpired':
+        return t('auth.errors.sessionExpired')
+      case 'accessDenied':
+        return t('auth.errors.accessDenied')
       case 'unknown':
         return t('auth.errors.unknown')
     }

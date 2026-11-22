@@ -1,7 +1,7 @@
 import type { Category, Product, ProductBarcode, StockMovement } from './entities'
 import type { Operation } from './operations'
-import type { Id } from './primitives'
-import type { Cursor, RejectReason } from './sync'
+import type { Id, UtcTimestamp } from './primitives'
+import type { BootstrapResponse, Cursor, RejectReason } from './sync'
 
 // Local database interfaces. Implementations live in the app (Dexie), so
 // services never touch storage or the network directly. Rows are stored as
@@ -43,8 +43,13 @@ export interface StockMovementRepository {
   getQuantity: (productId: Id) => Promise<number>
 }
 
+// pending: not confirmed by the server yet.
+// accepted: confirmed, kept until the pull that brings its rows back, so the
+//   screen never shows the old value in between.
+// rejected: refused by the server; the "needs attention" list.
 export type OutboxEntry
   = | { operation: Operation, userId: Id, status: 'pending' }
+    | { operation: Operation, userId: Id, status: 'accepted' }
     | { operation: Operation, userId: Id, status: 'rejected', reason: RejectReason }
 
 export interface OutboxRepository {
@@ -53,7 +58,10 @@ export interface OutboxRepository {
   listPending: (userId: Id) => Promise<OutboxEntry[]>
   // The "needs attention" list.
   listRejected: (userId: Id) => Promise<OutboxEntry[]>
+  markAccepted: (operationIds: readonly Id[]) => Promise<void>
   markRejected: (operationId: Id, reason: RejectReason) => Promise<void>
+  // Called once a pull has brought the accepted operations' rows back.
+  removeAccepted: (userId: Id) => Promise<void>
   remove: (operationId: Id) => Promise<void>
 }
 
@@ -61,4 +69,16 @@ export interface OutboxRepository {
 export interface SyncStateRepository {
   getCursor: () => Promise<Cursor | null>
   setCursor: (cursor: Cursor) => Promise<void>
+  // When the last full sync finished, for the status indicator.
+  getLastSyncedAt: () => Promise<UtcTimestamp | null>
+  setLastSyncedAt: (at: UtcTimestamp) => Promise<void>
+}
+
+// Device-level storage, shared by every shop signed in on the device.
+export interface DeviceRepository {
+  // Generated on first use, then the same forever. Sent on every operation.
+  getDeviceId: () => Promise<Id>
+  // The last bootstrap per user, so an offline start knows the shop and role.
+  saveBootstrap: (userId: Id, bootstrap: BootstrapResponse) => Promise<void>
+  getBootstrap: (userId: Id) => Promise<BootstrapResponse | undefined>
 }

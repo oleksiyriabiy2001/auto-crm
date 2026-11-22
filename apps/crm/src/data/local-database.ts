@@ -6,6 +6,7 @@ import type {
   Product,
   ProductBarcode,
   StockMovement,
+  UtcTimestamp,
 } from '@auto-crm/core'
 import type { DexieOptions, EntityTable } from 'dexie'
 import { Dexie } from 'dexie'
@@ -20,10 +21,9 @@ export interface StockLevelRow {
   quantity: number
 }
 
-export interface SyncStateRow {
-  key: 'cursor'
-  value: Cursor
-}
+export type SyncStateRow
+  = | { key: 'cursor', value: Cursor }
+    | { key: 'lastSyncedAt', value: UtcTimestamp }
 
 // The device's copy of one shop. Each shop gets its own database, so data
 // from two shops signed in on one device never mixes.

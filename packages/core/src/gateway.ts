@@ -13,13 +13,15 @@ export interface AuthSession {
   expiresAt: UtcTimestamp
 }
 
-// Why an auth call failed, independent of the backend. Adapters translate
+// Why a gateway call failed, independent of the backend. Adapters translate
 // their own errors into these so screens can show the right message.
 export type GatewayErrorCode
   = | 'invalidCredentials' // wrong email or password
     | 'weakPassword' // the new password is rejected as too weak
     | 'samePassword' // the new password equals the current one
     | 'network' // the backend could not be reached
+    | 'sessionExpired' // not signed in, or the session is no longer valid
+    | 'accessDenied' // no active membership, or the shop is suspended
     | 'unknown'
 
 export class GatewayError extends Error {
@@ -45,7 +47,8 @@ export interface RemoteAuth {
 }
 
 // The whole backend surface. Only the sync engine calls it, and only adapter
-// packages implement it, so swapping the adapter swaps the backend.
+// packages implement it, so swapping the adapter swaps the backend. Every
+// method rejects with a GatewayError.
 export interface RemoteGateway {
   auth: RemoteAuth
   bootstrap: () => Promise<BootstrapResponse>

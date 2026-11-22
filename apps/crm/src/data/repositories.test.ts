@@ -137,6 +137,21 @@ describe('DexieOutboxRepository', () => {
     ])
   })
 
+  it('keeps accepted entries out of the pending list until they are removed', async () => {
+    const outbox = new DexieOutboxRepository(db)
+    const [accepted, pending, theirs] = [deleteOperation(), deleteOperation(), deleteOperation()]
+    await outbox.add({ operation: accepted, userId: USER, status: 'pending' })
+    await outbox.add({ operation: pending, userId: USER, status: 'pending' })
+    await outbox.add({ operation: theirs, userId: OTHER_USER, status: 'accepted' })
+
+    await outbox.markAccepted([accepted.id])
+    expect((await outbox.listPending(USER)).map((entry) => entry.operation.id)).toStrictEqual([pending.id])
+
+    await outbox.removeAccepted(USER)
+    expect(await db.outbox.count()).toBe(2)
+    expect((await db.outbox.get({ operationId: theirs.id }))?.status).toBe('accepted')
+  })
+
   it('refuses the same operation twice', async () => {
     const outbox = new DexieOutboxRepository(db)
     const operation = deleteOperation()
@@ -152,6 +167,15 @@ describe('DexieSyncStateRepository', () => {
     await state.setCursor('41')
     await state.setCursor('42')
     expect(await state.getCursor()).toBe('42')
+  })
+
+  it('keeps the last sync time apart from the cursor', async () => {
+    const state = new DexieSyncStateRepository(db)
+    expect(await state.getLastSyncedAt()).toBeNull()
+    await state.setCursor('7')
+    await state.setLastSyncedAt('2026-11-22T10:00:00.000Z')
+    expect(await state.getLastSyncedAt()).toBe('2026-11-22T10:00:00.000Z')
+    expect(await state.getCursor()).toBe('7')
   })
 })
 

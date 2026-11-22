@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 // One runner for the whole workspace. Each package is a Vitest project, so
@@ -14,6 +15,9 @@ export default defineConfig({
         },
       },
       {
+        resolve: {
+          alias: { '@': fileURLToPath(new URL('apps/crm/src', import.meta.url)) },
+        },
         test: {
           name: 'crm',
           root: 'apps/crm',
