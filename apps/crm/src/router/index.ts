@@ -1,3 +1,5 @@
+import type { Capability } from '@auto-crm/core'
+import { can } from '@auto-crm/core'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { authRoutes } from '@/features/auth/auth.routes'
@@ -11,6 +13,8 @@ declare module 'vue-router' {
     public?: boolean
     // Only for signed-out users: a signed-in user is sent to the products.
     guestOnly?: boolean
+    // Only for roles with this capability; others are sent to the products.
+    capability?: Capability
   }
 }
 
@@ -41,6 +45,9 @@ router.beforeEach((to) => {
     return { name: 'login', query: to.fullPath === '/' ? {} : { redirect: to.fullPath } }
   }
   if (to.meta.guestOnly && session.isSignedIn) {
+    return { name: 'products' }
+  }
+  if (to.meta.capability && !(session.role && can(session.role, to.meta.capability))) {
     return { name: 'products' }
   }
   return true

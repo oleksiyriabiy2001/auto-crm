@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 
 import { useUnitLabel } from './composables/useUnitLabel'
 import type { ProductSortKey } from './product-filter'
@@ -96,6 +97,16 @@ const restore = async (product: ProductView) => {
           {{ t('products.list.deleted') }}
         </button>
       </div>
+      <RouterLink
+        v-if="can('createProduct')"
+        :to="{ name: 'product-new' }"
+        class="
+          ml-auto rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
+          hover:bg-blue-700
+        "
+      >
+        {{ t('products.list.add') }}
+      </RouterLink>
     </div>
 
     <div class="flex flex-wrap items-end gap-3">
@@ -197,7 +208,15 @@ const restore = async (product: ProductView) => {
           >
             <td class="px-4 py-2">
               <span class="flex flex-wrap items-center gap-2">
-                {{ product.name }}
+                <RouterLink
+                  :to="{ name: 'product', params: { id: product.id } }"
+                  class="
+                    font-medium text-blue-700
+                    hover:underline
+                  "
+                >
+                  {{ product.name }}
+                </RouterLink>
                 <PendingBadge v-if="product.pending" />
               </span>
             </td>
@@ -246,7 +265,15 @@ const restore = async (product: ProductView) => {
         >
           <div class="flex items-start justify-between gap-3">
             <span class="flex flex-wrap items-center gap-2 font-medium">
-              {{ product.name }}
+              <RouterLink
+                :to="{ name: 'product', params: { id: product.id } }"
+                class="
+                  text-blue-700
+                  hover:underline
+                "
+              >
+                {{ product.name }}
+              </RouterLink>
               <PendingBadge v-if="product.pending" />
             </span>
             <span
