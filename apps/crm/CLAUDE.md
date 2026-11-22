@@ -10,7 +10,7 @@
 
 - Views and components use `<script setup lang="ts">` and Tailwind.
 - Tailwind v4 has no `tailwind.config.js`. Theme tokens go in `@theme` in `src/styles/main.css`.
-- All UI text goes through `t()`. Messages live in `src/i18n/locales/uk.json` with camelCase keys nested by feature (`products.form.name`). Format dates and numbers with `Intl`, and money from its currency code.
+- All UI text goes through `t()`. Text for a value (a unit, a movement type, an error code) is a plain function in a `labels.ts` that calls `i18n.global.t`, with one `case` per value so ESLint can check every key; never build a key from a value. Composables are only for code that needs Vue reactivity or lifecycle. Messages live in `src/i18n/locales/uk.json` with camelCase keys nested by feature (`products.form.name`). Format dates and numbers with `Intl`, and money from its currency code.
 
 ## Project structure
 
@@ -24,9 +24,11 @@ src/
     <feature>.service.ts      class + exported instance
     <feature>.store.ts        Pinia store
     <feature>.types.ts / <feature>.schema.ts (zod form schemas)
+    <feature>.labels.ts       display text for the feature's values and errors
     components/               PascalCase .vue
     composables/              use<Name>.ts
-  shared/                     used by several features: services/ stores/ components/ composables/
+  shared/                     used by several features: services/ stores/ components/ composables/,
+                              labels.ts (shared display text), format.ts (Intl formatters)
   data/                       Dexie: LocalDatabase (one per shop), DeviceDatabase, the core repository interfaces
   sync/                       SyncEngine (push, pull, backoff) and SyncService (starts it for a session)
   router/index.ts             combines feature routes, guards sign-in

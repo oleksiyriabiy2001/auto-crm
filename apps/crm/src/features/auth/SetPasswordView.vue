@@ -3,9 +3,9 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 
-import AuthCard from './components/AuthCard.vue'
-import { useAuthErrorMessage } from './composables/useAuthErrorMessage'
+import { authErrorMessage } from './auth.labels'
 import { invalidFields, MIN_PASSWORD_LENGTH, NewPasswordFormSchema } from './auth.schema'
+import AuthCard from './components/AuthCard.vue'
 import { authService } from '@/shared/services/auth.service'
 import { useSessionStore } from '@/shared/stores/session.store'
 
@@ -14,7 +14,6 @@ import { useSessionStore } from '@/shared/stores/session.store'
 const { t } = useI18n()
 const router = useRouter()
 const session = useSessionStore()
-const authErrorMessage = useAuthErrorMessage()
 
 const password = ref('')
 const confirm = ref('')

@@ -3,15 +3,15 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
-import { useUnitLabel } from './composables/useUnitLabel'
 import type { ProductSortKey } from './product-filter'
 import { filterProducts } from './product-filter'
+import { unitLabel } from './products.labels'
 import { useProductsStore } from './products.store'
 import PendingBadge from '@/shared/components/PendingBadge.vue'
 import { useCan } from '@/shared/composables/useCan'
-import { useFormat } from '@/shared/composables/useFormat'
 import { useLiveQuery } from '@/shared/composables/useLiveQuery'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { formatMoney, formatQuantity } from '@/shared/format'
+import { serviceErrorMessage } from '@/shared/labels'
 import { categoryService } from '@/shared/services/category.service'
 import type { ProductView } from '@/shared/services/product.service'
 import { productService } from '@/shared/services/product.service'
@@ -19,10 +19,7 @@ import { productService } from '@/shared/services/product.service'
 // INV-1: the product list with search, filters and sorting. INV-5: admins
 // switch to deleted products and restore them.
 const { t } = useI18n()
-const { money, quantity } = useFormat()
-const unitLabel = useUnitLabel()
 const can = useCan()
-const serviceErrorMessage = useServiceErrorMessage()
 const store = useProductsStore()
 
 const live = useLiveQuery(() => productService.list())
@@ -227,10 +224,10 @@ const restore = async (product: ProductView) => {
               class="px-4 py-2 text-right whitespace-nowrap"
               :class="quantityClass(product)"
             >
-              {{ quantity(product.quantity) }} {{ unitLabel(product.unit) }}
+              {{ formatQuantity(product.quantity) }} {{ unitLabel(product.unit) }}
             </td>
             <td class="px-4 py-2 text-right whitespace-nowrap">
-              {{ product.salePriceMinor === null ? '—' : money(product.salePriceMinor, product.currency) }}
+              {{ product.salePriceMinor === null ? '—' : formatMoney(product.salePriceMinor, product.currency) }}
             </td>
             <td
               v-if="showingDeleted"
@@ -280,12 +277,12 @@ const restore = async (product: ProductView) => {
               class="whitespace-nowrap"
               :class="quantityClass(product)"
             >
-              {{ quantity(product.quantity) }} {{ unitLabel(product.unit) }}
+              {{ formatQuantity(product.quantity) }} {{ unitLabel(product.unit) }}
             </span>
           </div>
           <div class="mt-1 flex justify-between gap-3 text-sm text-gray-600">
             <span>{{ product.sku ?? '' }}</span>
-            <span>{{ product.salePriceMinor === null ? '' : money(product.salePriceMinor, product.currency) }}</span>
+            <span>{{ product.salePriceMinor === null ? '' : formatMoney(product.salePriceMinor, product.currency) }}</span>
           </div>
           <button
             v-if="showingDeleted"

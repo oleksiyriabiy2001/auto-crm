@@ -4,12 +4,11 @@ import { movementCapability, MovementTypeSchema, sumStock, toQuantityDelta } fro
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useMovementTypeLabel } from '@/shared/composables/useMovementTypeLabel'
-import { useUnitLabel } from '../composables/useUnitLabel'
+import { unitLabel } from '../products.labels'
 import { invalidFields, MovementFormSchema } from '../products.schema'
 import { useCan } from '@/shared/composables/useCan'
-import { useFormat } from '@/shared/composables/useFormat'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { formatQuantity } from '@/shared/format'
+import { movementTypeLabel, serviceErrorMessage } from '@/shared/labels'
 import type { ProductView } from '@/shared/services/product.service'
 import { stockService } from '@/shared/services/stock.service'
 
@@ -19,11 +18,7 @@ import { stockService } from '@/shared/services/stock.service'
 const props = defineProps<{ product: ProductView }>()
 
 const { t } = useI18n()
-const { quantity: formatQuantity } = useFormat()
-const typeLabel = useMovementTypeLabel()
-const unitLabel = useUnitLabel()
 const can = useCan()
-const serviceErrorMessage = useServiceErrorMessage()
 
 const types = computed(() => MovementTypeSchema.options.filter((type) => can(movementCapability(type))))
 const type = ref<MovementType>('receive')
@@ -52,7 +47,7 @@ const submit = async () => {
   submitting.value = true
   try {
     await stockService.recordMovement({ productId: props.product.id, ...form.data })
-    saved.value = t('products.movement.saved', { type: typeLabel(form.data.type) })
+    saved.value = t('products.movement.saved', { type: movementTypeLabel(form.data.type) })
     quantity.value = ''
     note.value = ''
   } catch (e) {
@@ -96,7 +91,7 @@ const inputClass = `
             :key="option"
             :value="option"
           >
-            {{ typeLabel(option) }}
+            {{ movementTypeLabel(option) }}
           </option>
         </select>
       </label>

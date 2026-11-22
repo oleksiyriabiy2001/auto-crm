@@ -3,13 +3,12 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
-import AuthCard from './components/AuthCard.vue'
-import { useAuthErrorMessage } from './composables/useAuthErrorMessage'
+import { authErrorMessage } from './auth.labels'
 import { EmailSchema } from './auth.schema'
+import AuthCard from './components/AuthCard.vue'
 import { authService } from '@/shared/services/auth.service'
 
 const { t } = useI18n()
-const authErrorMessage = useAuthErrorMessage()
 
 const email = ref('')
 const invalid = ref(false)

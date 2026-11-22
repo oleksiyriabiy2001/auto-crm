@@ -3,16 +3,15 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import AuthCard from './components/AuthCard.vue'
-import { useAuthErrorMessage } from './composables/useAuthErrorMessage'
+import { authErrorMessage } from './auth.labels'
 import { invalidFields, LoginFormSchema } from './auth.schema'
+import AuthCard from './components/AuthCard.vue'
 import { useSessionStore } from '@/shared/stores/session.store'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
-const authErrorMessage = useAuthErrorMessage()
 
 const email = ref('')
 const password = ref('')

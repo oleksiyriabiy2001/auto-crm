@@ -7,18 +7,16 @@ const dateTimeFormat = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'short', tim
 const quantityFormat = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 3 })
 const moneyFormats = new Map<Currency, Intl.NumberFormat>()
 
-const moneyFormat = (currency: Currency): Intl.NumberFormat => {
+export const formatDateTime = (utc: string): string => dateTimeFormat.format(new Date(utc))
+
+// Money is stored in minor units (kopiykas).
+export const formatMoney = (minor: number, currency: Currency): string => {
   let format = moneyFormats.get(currency)
   if (!format) {
     format = new Intl.NumberFormat(LOCALE, { style: 'currency', currency })
     moneyFormats.set(currency, format)
   }
-  return format
+  return format.format(minor / 100)
 }
 
-export const useFormat = () => ({
-  dateTime: (utc: string): string => dateTimeFormat.format(new Date(utc)),
-  // Money is stored in minor units (kopiykas).
-  money: (minor: number, currency: Currency): string => moneyFormat(currency).format(minor / 100),
-  quantity: (quantity: number): string => quantityFormat.format(quantity),
-})
+export const formatQuantity = (quantity: number): string => quantityFormat.format(quantity)

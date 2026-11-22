@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import PendingBadge from '@/shared/components/PendingBadge.vue'
 import { useLiveQuery } from '@/shared/composables/useLiveQuery'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { serviceErrorMessage } from '@/shared/labels'
 import type { CategoryView } from '@/shared/services/category.service'
 import { categoryService } from '@/shared/services/category.service'
 
@@ -14,7 +14,6 @@ import { categoryService } from '@/shared/services/category.service'
 // checks the role). Products and subcategories keep pointing at a deleted
 // category, so a restore brings the tree back.
 const { t } = useI18n()
-const serviceErrorMessage = useServiceErrorMessage()
 
 const live = useLiveQuery(() => categoryService.list())
 const deleted = useLiveQuery(() => categoryService.listDeleted())

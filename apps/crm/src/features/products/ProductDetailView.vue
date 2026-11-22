@@ -5,14 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
 import MovementForm from './components/MovementForm.vue'
-import { useMovementTypeLabel } from '@/shared/composables/useMovementTypeLabel'
-import { useUnitLabel } from './composables/useUnitLabel'
+import { unitLabel } from './products.labels'
 import { BarcodeTextSchema } from './products.schema'
 import PendingBadge from '@/shared/components/PendingBadge.vue'
 import { useCan } from '@/shared/composables/useCan'
-import { useFormat } from '@/shared/composables/useFormat'
 import { useLiveQuery } from '@/shared/composables/useLiveQuery'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { formatDateTime, formatMoney, formatQuantity } from '@/shared/format'
+import { movementTypeLabel, serviceErrorMessage } from '@/shared/labels'
 import { categoryService } from '@/shared/services/category.service'
 import { productService } from '@/shared/services/product.service'
 
@@ -20,11 +19,7 @@ import { productService } from '@/shared/services/product.service'
 // delete and restore it (INV-4, INV-5) and remove barcodes; everyone adds them.
 const { t } = useI18n()
 const route = useRoute()
-const { dateTime, money, quantity } = useFormat()
-const unitLabel = useUnitLabel()
-const movementTypeLabel = useMovementTypeLabel()
 const can = useCan()
-const serviceErrorMessage = useServiceErrorMessage()
 
 const id = computed<Id>(() => String(route.params.id))
 // Null once the product turns out not to exist; undefined while loading.
@@ -186,7 +181,7 @@ const quantityClass = computed(() => {
             class="mt-1 text-3xl font-semibold"
             :class="quantityClass"
           >
-            {{ quantity(product.quantity) }} {{ unitLabel(product.unit) }}
+            {{ formatQuantity(product.quantity) }} {{ unitLabel(product.unit) }}
           </p>
           <p
             v-if="product.isNegativeStock"
@@ -219,17 +214,17 @@ const quantityClass = computed(() => {
           <dt class="text-gray-600">
             {{ t('products.fields.salePrice') }}
           </dt>
-          <dd>{{ product.salePriceMinor === null ? '—' : money(product.salePriceMinor, product.currency) }}</dd>
+          <dd>{{ product.salePriceMinor === null ? '—' : formatMoney(product.salePriceMinor, product.currency) }}</dd>
           <template v-if="showCost">
             <dt class="text-gray-600">
               {{ t('products.fields.costPrice') }}
             </dt>
-            <dd>{{ product.costPriceMinor === null ? '—' : money(product.costPriceMinor, product.currency) }}</dd>
+            <dd>{{ product.costPriceMinor === null ? '—' : formatMoney(product.costPriceMinor, product.currency) }}</dd>
           </template>
           <dt class="text-gray-600">
             {{ t('products.fields.minStock') }}
           </dt>
-          <dd>{{ product.minStock === null ? '—' : `${quantity(product.minStock)} ${unitLabel(product.unit)}` }}</dd>
+          <dd>{{ product.minStock === null ? '—' : `${formatQuantity(product.minStock)} ${unitLabel(product.unit)}` }}</dd>
           <dt class="text-gray-600">
             {{ t('products.fields.locationNote') }}
           </dt>
@@ -353,7 +348,7 @@ const quantityClass = computed(() => {
                 :key="movement.id"
               >
                 <td class="py-1.5 pr-4 whitespace-nowrap">
-                  {{ dateTime(movement.occurredAt) }}
+                  {{ formatDateTime(movement.occurredAt) }}
                 </td>
                 <td class="py-1.5 pr-4">
                   <span class="flex flex-wrap items-center gap-2">
@@ -365,16 +360,16 @@ const quantityClass = computed(() => {
                   class="py-1.5 pr-4 text-right whitespace-nowrap"
                   :class="movement.quantityDelta < 0 ? 'text-red-700' : 'text-green-700'"
                 >
-                  {{ movement.quantityDelta > 0 ? '+' : '' }}{{ quantity(movement.quantityDelta) }}
+                  {{ movement.quantityDelta > 0 ? '+' : '' }}{{ formatQuantity(movement.quantityDelta) }}
                 </td>
                 <td class="py-1.5 pr-4 text-right whitespace-nowrap">
-                  {{ movement.unitPriceMinor === null ? '—' : money(movement.unitPriceMinor, movement.currency) }}
+                  {{ movement.unitPriceMinor === null ? '—' : formatMoney(movement.unitPriceMinor, movement.currency) }}
                 </td>
                 <td
                   v-if="showCost"
                   class="py-1.5 pr-4 text-right whitespace-nowrap"
                 >
-                  {{ movement.unitCostMinor === null ? '—' : money(movement.unitCostMinor, movement.currency) }}
+                  {{ movement.unitCostMinor === null ? '—' : formatMoney(movement.unitCostMinor, movement.currency) }}
                 </td>
                 <td class="py-1.5 text-gray-600">
                   {{ movement.note ?? '' }}

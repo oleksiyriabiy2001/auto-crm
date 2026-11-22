@@ -5,11 +5,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { useUnitLabel } from './composables/useUnitLabel'
+import { unitLabel } from './products.labels'
 import { BarcodeTextSchema, invalidFields, ProductFormSchema, toMoneyText, toQuantityText } from './products.schema'
 import { useCan } from '@/shared/composables/useCan'
 import { useLiveQuery } from '@/shared/composables/useLiveQuery'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { serviceErrorMessage } from '@/shared/labels'
 import { categoryService } from '@/shared/services/category.service'
 import { productService } from '@/shared/services/product.service'
 
@@ -19,8 +19,6 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const can = useCan()
-const unitLabel = useUnitLabel()
-const serviceErrorMessage = useServiceErrorMessage()
 
 const editingId = computed<Id | null>(() => (route.name === 'product-edit' ? String(route.params.id) : null))
 const showCost = computed(() => can('viewReports'))

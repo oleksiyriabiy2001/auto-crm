@@ -2,12 +2,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useFormat } from '@/shared/composables/useFormat'
+import { formatDateTime } from '@/shared/format'
 import { useSyncStore } from '@/shared/stores/sync.store'
 
 // SYN-1: online or offline, unsynced changes, last sync time.
 const { t } = useI18n()
-const { dateTime } = useFormat()
 const sync = useSyncStore()
 
 const phase = computed(() => {
@@ -52,7 +51,7 @@ const phase = computed(() => {
       {{ t('sync.status.rejected', { count: sync.status.rejectedCount }) }}
     </span>
     <span v-if="sync.status.lastSyncedAt">
-      {{ t('sync.status.lastSynced', { at: dateTime(sync.status.lastSyncedAt) }) }}
+      {{ t('sync.status.lastSynced', { at: formatDateTime(sync.status.lastSyncedAt) }) }}
     </span>
   </div>
 </template>

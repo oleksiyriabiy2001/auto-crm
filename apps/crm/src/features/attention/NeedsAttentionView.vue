@@ -3,21 +3,16 @@ import type { Id } from '@auto-crm/core'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useAttentionLabels } from './composables/useAttentionLabels'
-import { useFormat } from '@/shared/composables/useFormat'
+import { operationLabel, reasonLabel } from './attention.labels'
 import { useLiveQuery } from '@/shared/composables/useLiveQuery'
-import { useMovementTypeLabel } from '@/shared/composables/useMovementTypeLabel'
-import { useServiceErrorMessage } from '@/shared/composables/useServiceErrorMessage'
+import { formatDateTime, formatQuantity } from '@/shared/format'
+import { movementTypeLabel, serviceErrorMessage } from '@/shared/labels'
 import type { AttentionItem } from '@/shared/services/outbox.service'
 import { outboxService } from '@/shared/services/outbox.service'
 
 // SYN-2: changes the server refused, with retry and discard. A refused change
 // is not shown anywhere else, so this is where the user decides about it.
 const { t } = useI18n()
-const { dateTime, quantity } = useFormat()
-const { operationLabel, reasonLabel } = useAttentionLabels()
-const movementTypeLabel = useMovementTypeLabel()
-const serviceErrorMessage = useServiceErrorMessage()
 
 const items = useLiveQuery(() => outboxService.listRejected())
 const error = ref<string | null>(null)
@@ -46,7 +41,7 @@ const movement = (item: AttentionItem): string | null => {
   const { operation } = item
   if (operation.type !== 'stock.move') return null
   const { type, quantityDelta } = operation.payload
-  return `${movementTypeLabel(type)} ${quantityDelta > 0 ? '+' : ''}${quantity(quantityDelta)}`
+  return `${movementTypeLabel(type)} ${quantityDelta > 0 ? '+' : ''}${formatQuantity(quantityDelta)}`
 }
 </script>
 
@@ -93,7 +88,7 @@ const movement = (item: AttentionItem): string | null => {
             v-if="movement(item)"
             class="text-sm"
           >{{ movement(item) }}</span>
-          <span class="ml-auto text-sm text-gray-500">{{ dateTime(item.operation.clientTimestamp) }}</span>
+          <span class="ml-auto text-sm text-gray-500">{{ formatDateTime(item.operation.clientTimestamp) }}</span>
         </div>
         <p class="mt-1 text-sm text-red-700">
           {{ reasonLabel(item.reason) }}
