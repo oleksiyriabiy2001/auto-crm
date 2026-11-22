@@ -31,7 +31,7 @@ const submit = async () => {
   submitting.value = true
   try {
     await authService.updatePassword(form.data.password)
-    await router.replace({ name: 'home' })
+    await router.replace({ name: 'products' })
   } catch (e) {
     error.value = authErrorMessage(e)
   } finally {
