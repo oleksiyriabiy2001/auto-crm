@@ -12,6 +12,7 @@ const TABLE: [Capability, boolean, boolean, boolean][] = [
   ['editProduct', false, true, true],
   ['deleteProduct', false, true, true],
   ['adjustStock', false, true, true],
+  ['manageCategories', false, true, true],
   ['viewReports', false, true, true],
   ['importExport', false, true, true],
   ['manageUsers', false, false, true],

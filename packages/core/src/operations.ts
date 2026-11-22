@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   BarcodeFieldsSchema,
+  CategoryFieldsSchema,
   MovementFieldsSchema,
   ProductFieldsSchema,
 } from './entities'
@@ -83,7 +84,54 @@ const StockMoveSchema = z.object({
     }),
 })
 
+const CategoryCreateSchema = z.object({
+  ...envelope,
+  type: z.literal('category.create'),
+  payload: z.object({ id: IdSchema, ...CategoryFieldsSchema.shape }),
+})
+
+// Edits are last write wins like products. A move that would put a category
+// under one of its own descendants needs the whole tree, so the service checks
+// it with createsCategoryCycle and the server re-checks it at push time.
+const CategoryUpdateSchema = z.object({
+  ...envelope,
+  type: z.literal('category.update'),
+  baseVersion,
+  payload: z
+    .object({
+      id: IdSchema,
+      changes: CategoryFieldsSchema.partial().refine(
+        (changes) => Object.keys(changes).length > 0,
+        { message: 'An update must change at least one field' },
+      ),
+    })
+    .refine(({ id, changes }) => changes.parentId !== id, {
+      message: 'A category cannot be its own parent',
+      path: ['changes', 'parentId'],
+    }),
+})
+
+// Products and subcategories keep pointing at a deleted category, so a
+// restore brings the tree back as it was.
+const CategoryDeleteSchema = z.object({
+  ...envelope,
+  type: z.literal('category.delete'),
+  baseVersion,
+  payload: z.object({ id: IdSchema }),
+})
+
+const CategoryRestoreSchema = z.object({
+  ...envelope,
+  type: z.literal('category.restore'),
+  baseVersion,
+  payload: z.object({ id: IdSchema }),
+})
+
 export const OperationSchema = z.discriminatedUnion('type', [
+  CategoryCreateSchema,
+  CategoryUpdateSchema,
+  CategoryDeleteSchema,
+  CategoryRestoreSchema,
   ProductCreateSchema,
   ProductUpdateSchema,
   ProductDeleteSchema,
@@ -109,6 +157,11 @@ const MOVEMENT_CAPABILITY: Record<MovementType, Capability> = {
 // The capability the server checks at push time before applying `operation`.
 export const requiredCapability = (operation: Operation): Capability => {
   switch (operation.type) {
+    case 'category.create':
+    case 'category.update':
+    case 'category.delete':
+    case 'category.restore':
+      return 'manageCategories'
     case 'product.create':
       return 'createProduct'
     case 'barcode.add':

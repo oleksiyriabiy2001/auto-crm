@@ -13,6 +13,7 @@ export type Capability
     | 'editProduct' // edit existing products and remove barcodes
     | 'deleteProduct' // delete and restore products
     | 'adjustStock' // adjustments, write-offs and initial counts
+    | 'manageCategories' // create, edit, delete and restore categories
     | 'viewReports' // see cost prices, analytics and the audit log
     | 'importExport' // import and export CSV
     | 'manageUsers' // manage the shop's users
@@ -30,6 +31,7 @@ const PERMISSIONS: Record<Capability, readonly Role[]> = {
   editProduct: ADMINS,
   deleteProduct: ADMINS,
   adjustStock: ADMINS,
+  manageCategories: ADMINS,
   viewReports: ADMINS,
   importExport: ADMINS,
   manageUsers: SUPER_ADMIN,

@@ -99,6 +99,7 @@ Every device keeps a full copy of its shop's catalog and records changes as oper
 | Stock movements | Append-only, never edited. Quantity is the sum of movements. | Two devices selling the same item offline both count; nothing is overwritten. |
 | Product fields | Last write wins by server receive time. The overwritten edit stays in the audit log. | Only admins edit products, so real conflicts are rare. |
 | Deletes | Soft delete with a tombstone. An admin can restore. | Past movements and analytics keep working. |
+| Categories | Name and parent are last write wins, like products. A move that would put a category under its own descendant is rejected and lands in "needs attention". Deleting a category keeps its products and subcategories pointing at it, so a restore brings the tree back. | Two offline moves must never form a loop. |
 | Barcodes | Unique per `(tenant_id, barcode)`. If two offline devices attach one barcode to different products, the later push is rejected and lands in a "needs attention" list. | A barcode must point to one product. |
 | Negative stock | Allowed and flagged. | A sale already happened in the real world; the app must not reject it. |
 | Permissions | The server re-checks the role at push time. Operations from a user who lost rights while offline are rejected and listed in "needs attention". | Offline devices cannot bypass role changes. |
@@ -126,7 +127,7 @@ The whole backend surface for sync is two calls, defined as zod schemas in `core
 - `push(operations)` returns one result per operation: accepted, duplicate, or rejected with a reason.
 - `pull(cursor)` returns rows changed since the cursor, including tombstones, and the new cursor. Every synced row carries a monotonically increasing `server_seq`.
 
-Operation types in v1: `product.create`, `product.update`, `product.delete`, `product.restore`, `barcode.add`, `barcode.remove`, `stock.move`. Each operation carries `id`, `type`, `payload`, the version it was based on where relevant, the client timestamp and a device id.
+Operation types in v1: `category.create`, `category.update`, `category.delete`, `category.restore`, `product.create`, `product.update`, `product.delete`, `product.restore`, `barcode.add`, `barcode.remove`, `stock.move`. Each operation carries `id`, `type`, `payload`, the version it was based on where relevant, the client timestamp and a device id.
 
 ## Data model
 
@@ -183,6 +184,7 @@ Staff permissions are a proposed default; see the open questions.
 | Add a barcode to an existing product | Yes | Yes | Yes |
 | Edit existing products and remove barcodes | No | Yes | Yes |
 | Delete and restore products | No | Yes | Yes |
+| Create, edit, delete and restore categories | No | Yes | Yes |
 | Adjustments, write-offs and initial counts | No | Yes | Yes |
 | See cost prices, analytics and the audit log | No | Yes | Yes |
 | Import and export CSV | No | Yes | Yes |

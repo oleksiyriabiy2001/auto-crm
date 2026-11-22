@@ -8,6 +8,7 @@ const envelope = {
   deviceId: '01890a5d-ac96-774b-bcce-b302099a8061',
 }
 const productId = '01890a5d-ac96-774b-bcce-b302099a8062'
+const categoryId = '01890a5d-ac96-774b-bcce-b302099a8065'
 
 const productFields = {
   sku: null,
@@ -79,6 +80,35 @@ describe('OperationSchema', () => {
     expect(OperationSchema.safeParse({ ...restore, baseVersion: 2 }).success).toBe(true)
   })
 
+  it('accepts a category create, top-level or nested', () => {
+    const create = (parentId: string | null) => ({
+      ...envelope, type: 'category.create', payload: { id: categoryId, name: 'Оливи', parentId },
+    })
+    expect(OperationSchema.safeParse(create(null)).success).toBe(true)
+    expect(OperationSchema.safeParse(create(productId)).success).toBe(true)
+    expect(OperationSchema.safeParse({ ...create(null), payload: { id: categoryId, name: '', parentId: null } }).success).toBe(false)
+  })
+
+  it('requires a base version and a change on a category update', () => {
+    const update = { ...envelope, type: 'category.update', payload: { id: categoryId, changes: { parentId: null } } }
+    expect(OperationSchema.safeParse(update).success).toBe(false)
+    expect(OperationSchema.safeParse({ ...update, baseVersion: 1 }).success).toBe(true)
+    expect(OperationSchema.safeParse({ ...update, baseVersion: 1, payload: { id: categoryId, changes: {} } }).success).toBe(false)
+  })
+
+  it('rejects a category moved under itself', () => {
+    const update = { ...envelope, type: 'category.update', baseVersion: 1, payload: { id: categoryId, changes: { parentId: categoryId } } }
+    expect(OperationSchema.safeParse(update).success).toBe(false)
+  })
+
+  it('requires a base version on a category delete and restore', () => {
+    for (const type of ['category.delete', 'category.restore']) {
+      const op = { ...envelope, type, payload: { id: categoryId } }
+      expect(OperationSchema.safeParse(op).success).toBe(false)
+      expect(OperationSchema.safeParse({ ...op, baseVersion: 1 }).success).toBe(true)
+    }
+  })
+
   it('rejects an unknown operation type', () => {
     expect(OperationSchema.safeParse({ ...envelope, type: 'product.merge', payload: { id: productId } }).success).toBe(false)
   })
@@ -92,6 +122,10 @@ describe('requiredCapability', () => {
     [{ ...envelope, type: 'product.restore', baseVersion: 2, payload: { id: productId } }, 'deleteProduct'],
     [{ ...envelope, type: 'barcode.add', payload: { id: productId, productId, barcode: '123', symbology: null } }, 'addBarcode'],
     [{ ...envelope, type: 'barcode.remove', payload: { id: productId } }, 'editProduct'],
+    [{ ...envelope, type: 'category.create', payload: { id: categoryId, name: 'Оливи', parentId: null } }, 'manageCategories'],
+    [{ ...envelope, type: 'category.update', baseVersion: 1, payload: { id: categoryId, changes: { name: 'Мастила' } } }, 'manageCategories'],
+    [{ ...envelope, type: 'category.delete', baseVersion: 1, payload: { id: categoryId } }, 'manageCategories'],
+    [{ ...envelope, type: 'category.restore', baseVersion: 2, payload: { id: categoryId } }, 'manageCategories'],
     [stockMove('receive', 1), 'recordMovement'],
     [stockMove('sale', -1), 'recordMovement'],
     [stockMove('consume', -1), 'recordMovement'],

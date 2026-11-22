@@ -70,6 +70,19 @@ const deleteProduct = (id: string): Operation => ({
   payload: { id },
 })
 
+const createCategory = (id: string, name: string, parentId: string | null = null): Operation => ({
+  ...envelope(),
+  type: 'category.create',
+  payload: { id, name, parentId },
+})
+
+const updateCategory = (id: string, changes: { name?: string, parentId?: string | null }): Operation => ({
+  ...envelope(),
+  type: 'category.update',
+  baseVersion: 1,
+  payload: { id, changes },
+})
+
 const moveStock = (productId: string, type: 'receive' | 'sale' | 'adjustment', quantityDelta: number, note: string | null = null): Operation => ({
   ...envelope(),
   type: 'stock.move',
@@ -203,10 +216,41 @@ export const describeGatewayContract = (harness: ContractHarness): void => {
         ['staff', 'edits a product', 'forbidden', () => updateProduct(productId, 'Edited')],
         ['staff', 'deletes a product', 'forbidden', () => deleteProduct(productId)],
         ['staff', 'records an adjustment', 'forbidden', () => moveStock(productId, 'adjustment', 1, 'Перерахунок')],
+        ['staff', 'creates a category', 'forbidden', () => createCategory(newId(), 'By staff')],
+        ['admin', 'creates a category', 'accepted', () => createCategory(newId(), 'By admin')],
         ['admin', 'edits a product', 'accepted', () => updateProduct(productId, 'Edited')],
         ['admin', 'records an adjustment', 'accepted', () => moveStock(productId, 'adjustment', 1, 'Перерахунок')],
       ] as const)('%s %s: %s', async (role, _, expected, operation) => {
         expect(await outcome(shopA[role].gateway, operation())).toBe(expected)
+      })
+    })
+
+    describe('categories', () => {
+      it('a nested category arrives through pull', async () => {
+        const parent = newId()
+        const child = newId()
+        expect(await outcome(shopA.admin.gateway, createCategory(parent, 'Оливи'))).toBe('accepted')
+        expect(await outcome(shopA.admin.gateway, createCategory(child, 'Моторні', parent))).toBe('accepted')
+
+        const categories = (await pullAll(shopA.staff.gateway)).flatMap((page) => page.changes.categories)
+        expect(categories.find((category) => category.id === child)?.parentId).toBe(parent)
+      })
+
+      it('rejects a move under the category\'s own descendant', async () => {
+        const parent = newId()
+        const child = newId()
+        await outcome(shopA.admin.gateway, createCategory(parent, 'Фільтри'))
+        await outcome(shopA.admin.gateway, createCategory(child, 'Масляні', parent))
+        expect(await outcome(shopA.admin.gateway, updateCategory(parent, { parentId: child }))).toBe('categoryCycle')
+      })
+
+      it('a user of shop A cannot read or change shop B categories', async () => {
+        const categoryB = newId()
+        expect(await outcome(shopB.admin.gateway, createCategory(categoryB, 'Category B'))).toBe('accepted')
+        expect(await outcome(shopA.admin.gateway, updateCategory(categoryB, { name: 'Hacked' }))).toBe('notFound')
+        expect(await outcome(shopA.admin.gateway, createCategory(newId(), 'Sneaky', categoryB))).toBe('notFound')
+        const idsInA = (await pullAll(shopA.staff.gateway)).flatMap((page) => page.changes.categories.map((category) => category.id))
+        expect(idsInA).not.toContain(categoryB)
       })
     })
 

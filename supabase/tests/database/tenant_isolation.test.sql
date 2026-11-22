@@ -2,7 +2,7 @@
 -- can write any table directly.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(42);
+select plan(47);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: shop A (admin, staff), shop B (admin), and a user with no shop.
@@ -143,6 +143,17 @@ select is(tests.outcome(tests.op('product.create', jsonb_build_object(
   'salePriceMinor', null, 'currency', 'UAH', 'minStock', null, 'locationNote', null,
   'isActive', true, 'barcodes', '[]'::jsonb))),
   'invalidPayload', 'A admin cannot file a product under a shop B category');
+select is(tests.outcome(tests.op('category.update',
+  '{"id": "bbbbbbbb-0000-4000-8000-0000000000c1", "changes": {"name": "Hacked"}}', 1)),
+  'notFound', 'A admin cannot rename a shop B category');
+select is(tests.outcome(tests.op('category.delete', '{"id": "bbbbbbbb-0000-4000-8000-0000000000c1"}', 1)),
+  'notFound', 'A admin cannot delete a shop B category');
+select is(tests.outcome(tests.op('category.create', jsonb_build_object(
+  'id', gen_random_uuid(), 'name', 'Sneaky', 'parentId', 'bbbbbbbb-0000-4000-8000-0000000000c1'))),
+  'notFound', 'A admin cannot create a category under a shop B category');
+select is(tests.outcome(tests.op('category.update',
+  '{"id": "aaaaaaaa-0000-4000-8000-0000000000c1", "changes": {"parentId": "bbbbbbbb-0000-4000-8000-0000000000c1"}}', 1)),
+  'notFound', 'A admin cannot move a category under a shop B category');
 
 -- Pull and bootstrap return only the caller's shop.
 select is(
@@ -165,6 +176,10 @@ select is(public.bootstrap() -> 'membership' ->> 'role', 'staff', 'bootstrap ret
 reset role;
 select is((select name from public.products where id = 'bbbbbbbb-0000-4000-8000-0000000000f1'), 'Product B', 'shop B product is unchanged');
 select is((select deleted_at from public.products where id = 'bbbbbbbb-0000-4000-8000-0000000000f1'), null, 'shop B product is not deleted');
+select results_eq(
+  $$select name, deleted_at from public.categories where id = 'bbbbbbbb-0000-4000-8000-0000000000c1'$$,
+  $$values ('Фільтри'::text, null::timestamptz)$$,
+  'shop B category is unchanged');
 select is((select quantity from public.stock_levels where product_id = 'bbbbbbbb-0000-4000-8000-0000000000f1'), 7.000, 'shop B stock is unchanged');
 
 select * from finish();

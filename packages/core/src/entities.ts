@@ -43,10 +43,16 @@ export const MembershipSchema = z.object({
 })
 export type Membership = z.infer<typeof MembershipSchema>
 
+// The fields a user edits. Shared by the category row and its operations.
+export const CategoryFieldsSchema = z.object({
+  name: TextSchema,
+  // Null for a top-level category.
+  parentId: IdSchema.nullable(),
+})
+
 export const CategorySchema = z.object({
   ...syncedRow,
-  name: TextSchema,
-  parentId: IdSchema.nullable(),
+  ...CategoryFieldsSchema.shape,
 })
 export type Category = z.infer<typeof CategorySchema>
 

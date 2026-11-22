@@ -24,6 +24,7 @@ export const RejectReasonSchema = z.enum([
   'tenantSuspended',
   'barcodeConflict', // the barcode already belongs to another product
   'skuConflict', // another product in the shop already has this SKU
+  'categoryCycle', // the move would put a category under its own descendant
   'notFound',
   'invalidPayload',
 ])
